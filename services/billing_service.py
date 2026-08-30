@@ -202,8 +202,10 @@ def approve_order_request(db: Session, invoice_id: int, user_id: Optional[int] =
         if existing:
             raise BillingError(f"Invoice number '{new_num}' already exists.")
         invoice.invoice_number = new_num
-    elif invoice.invoice_number.startswith("REQ-") or invoice.invoice_number.startswith("ORD-"):
-        invoice.invoice_number = reserve_next_invoice_number(db)
+    else:
+        if invoice.invoice_number.startswith("REQ-") or invoice.invoice_number.startswith("ORD-"):
+            raise BillingError("Manual Invoice Number is required! Please enter the invoice number matching your physical invoice book to finalize this order.")
+        new_num = invoice.invoice_number
 
     customer = db.get(Customer, invoice.customer_id)
 
@@ -249,13 +251,13 @@ def create_invoice(
 
     settings = db.query(CompanySettings).first()
 
-    if custom_invoice_number and custom_invoice_number.strip():
-        invoice_number = custom_invoice_number.strip()
-        existing = db.query(Invoice).filter(Invoice.invoice_number == invoice_number).first()
-        if existing:
-            raise BillingError(f"Invoice number '{invoice_number}' already exists.")
-    else:
-        invoice_number = reserve_next_invoice_number(db)
+    if not custom_invoice_number or not custom_invoice_number.strip():
+        raise BillingError("Invoice Number is required! Please enter the manual invoice number matching your physical invoice book.")
+
+    invoice_number = custom_invoice_number.strip()
+    existing = db.query(Invoice).filter(Invoice.invoice_number == invoice_number).first()
+    if existing:
+        raise BillingError(f"Invoice number '{invoice_number}' already exists in database.")
 
     invoice = Invoice(
         invoice_number=invoice_number,

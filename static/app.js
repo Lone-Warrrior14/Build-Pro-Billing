@@ -1154,9 +1154,19 @@ async function permanentDeleteInvoice(invId, invNumber) {
 }
 
 async function approveOrder(invId) {
-    if (!confirm("Approve this sales order request and convert it to an official invoice?")) return;
+    let manualNum = prompt("Enter the manual Invoice Book Number matching your physical invoice book:");
+    if (manualNum === null) return;
+    manualNum = manualNum.trim();
+    if (!manualNum) {
+        alert("Manual Invoice Book Number is required to convert/approve this order into an official invoice!");
+        return;
+    }
     try {
-        const res = await fetch(`/api/invoices/${invId}/approve`, { method: 'POST' });
+        const res = await fetch(`/api/invoices/${invId}/approve`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ invoice_number: manualNum })
+        });
         const data = await res.json();
         if (data.success) {
             alert(data.message);
@@ -1396,6 +1406,12 @@ async function submitInvoice() {
 
     const isOrderRequest = state.invoiceFormMode === 'order_request';
 
+    if (!isOrderRequest && !manualInvoiceNumber) {
+        alert("Invoice Book Number is required! Please enter the manual Invoice Number matching your physical invoice book.");
+        document.getElementById('bill-invoice-number')?.focus();
+        return;
+    }
+
     if (isOrderRequest) {
         const isEdit = !!state.editingInvoiceId;
         const url = isEdit ? `/api/invoices/${state.editingInvoiceId}` : '/api/invoices';
@@ -1569,6 +1585,13 @@ async function executeSaveInvoice(asDraft = false) {
     }
 
     const isApproving = state.isApprovingOrder;
+    const isDraft = !isApproving && (asDraft || state.currentRole === 'sales_executive');
+
+    if (!isDraft && (!currentPendingInvoiceData.invoice_number || !currentPendingInvoiceData.invoice_number.trim())) {
+        alert("Invoice Book Number is required! Please enter the manual Invoice Number matching your physical invoice book.");
+        if (previewNumInput) previewNumInput.focus();
+        return;
+    }
     const payload = {
         ...currentPendingInvoiceData,
         is_order_request: !isApproving && (asDraft || state.currentRole === 'sales_executive')
@@ -1995,9 +2018,13 @@ async function submitSqftInvoice() {
     const paymentMethod = document.getElementById('sqft-payment-method')?.value || 'cash';
     const notes = document.getElementById('sqft-bill-notes')?.value || "";
     const mapsLocationLink = document.getElementById('sqft-maps-location')?.value?.trim() || "";
-    const manualInvoiceNumber = document.getElementById('sqft-invoice-number')?.value?.trim() || "";
-
     const isOrderRequest = state.currentRole === 'sales_executive';
+
+    if (!isOrderRequest && !manualInvoiceNumber) {
+        alert("Invoice Book Number is required! Please enter the manual Invoice Number matching your physical invoice book.");
+        document.getElementById('sqft-invoice-number')?.focus();
+        return;
+    }
 
     try {
         const response = await fetch('/api/invoices', {
