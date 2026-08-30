@@ -29,8 +29,13 @@ def create_backup(label: str = None) -> str:
     if not os.path.exists(src_path):
         raise FileNotFoundError("Live database not found - nothing to back up.")
 
-    date_str = label or dt.datetime.now().strftime("%Y-%m-%d_%H%M%S")
-    dest_path = os.path.join(get_backup_dir(), f"backup_{date_str}.db")
+    if label:
+        filename = f"{label}.db" if not label.endswith(".db") else label
+    else:
+        date_str = dt.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        filename = f"backup_{date_str}.db"
+
+    dest_path = os.path.join(get_backup_dir(), filename)
 
     src_conn = sqlite3.connect(src_path)
     dest_conn = sqlite3.connect(dest_path)
