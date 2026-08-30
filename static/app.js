@@ -2701,7 +2701,7 @@ async function loadDraftOrders() {
             if (!tbody) return;
             tbody.innerHTML = '';
             if (data.draft_orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-secondary py-4 fw-medium">No approved draft orders found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-secondary py-4 fw-medium">No approved draft orders found.</td></tr>';
                 return;
             }
             data.draft_orders.forEach(ord => {
