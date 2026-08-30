@@ -3,6 +3,8 @@
 # Produces dist/BuildPro/BuildPro.exe (Windows) with "data", "backups",
 # "assets", and "generated_invoices" folders created on first run.
 
+from PyInstaller.utils.hooks import collect_data_files
+
 block_cipher = None
 
 a = Analysis(
@@ -16,7 +18,7 @@ a = Analysis(
         ('bill logo.png', '.'),
         ('seal.png', '.'),
         ('sign.png', '.'),
-    ],
+    ] + collect_data_files('pycloudflared'),
     hiddenimports=[
         'pycloudflared',
         'sqlalchemy.sql.default_comparator',

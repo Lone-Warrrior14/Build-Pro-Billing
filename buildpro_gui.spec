@@ -2,6 +2,8 @@
 # Build standalone desktop GUI application with:
 # pyinstaller buildpro_gui.spec
 
+from PyInstaller.utils.hooks import collect_data_files
+
 block_cipher = None
 
 a = Analysis(
@@ -15,7 +17,7 @@ a = Analysis(
         ('bill logo.png', '.'),
         ('seal.png', '.'),
         ('sign.png', '.'),
-    ],
+    ] + collect_data_files('pycloudflared'),
     hiddenimports=[
         'pycloudflared',
         'webview',
