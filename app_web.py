@@ -987,6 +987,7 @@ def get_draft_orders():
                 "items_count": len(inv.items),
                 "items": items_list,
                 "grand_total": inv.grand_total,
+                "maps_location_link": getattr(inv, "maps_location_link", "") or "",
                 "created_by": creator,
                 "status": inv.status.value
             })

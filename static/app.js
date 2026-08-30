@@ -1585,7 +1585,7 @@ async function executeSaveInvoice(asDraft = false) {
     }
 
     const isApproving = state.isApprovingOrder;
-    const isDraft = !isApproving && (asDraft || state.currentRole === 'sales_executive');
+    const isDraft = !isApproving && asDraft;
 
     if (!isDraft && (!currentPendingInvoiceData.invoice_number || !currentPendingInvoiceData.invoice_number.trim())) {
         alert("Invoice Book Number is required! Please enter the manual Invoice Number matching your physical invoice book.");
@@ -1594,7 +1594,7 @@ async function executeSaveInvoice(asDraft = false) {
     }
     const payload = {
         ...currentPendingInvoiceData,
-        is_order_request: !isApproving && (asDraft || state.currentRole === 'sales_executive')
+        is_order_request: !isApproving && asDraft
     };
 
     const isEdit = !!state.editingInvoiceId;
@@ -1974,7 +1974,7 @@ function recalculateSqftBillTotals() {
     if (grandTotalEl) grandTotalEl.innerText = `₹${grandTotal.toFixed(2)}`;
 }
 
-async function submitSqftInvoice() {
+async function submitSqftInvoice(asDraft = false) {
     const customerId = parseInt(document.getElementById('sqft-customer-select')?.value) || 0;
     if (!customerId) {
         alert("Please select a Client/Shop to issue the SqFt Construction Bill!");
@@ -2018,7 +2018,7 @@ async function submitSqftInvoice() {
     const paymentMethod = document.getElementById('sqft-payment-method')?.value || 'cash';
     const notes = document.getElementById('sqft-bill-notes')?.value || "";
     const mapsLocationLink = document.getElementById('sqft-maps-location')?.value?.trim() || "";
-    const isOrderRequest = state.currentRole === 'sales_executive';
+    const isOrderRequest = asDraft || state.invoiceFormMode === 'order_request';
 
     if (!isOrderRequest && !manualInvoiceNumber) {
         alert("Invoice Book Number is required! Please enter the manual Invoice Number matching your physical invoice book.");
@@ -2714,7 +2714,14 @@ async function loadDraftOrders() {
                     <td class="fw-bold text-info"><i class="fa-solid fa-file-signature me-1"></i>${ord.invoice_number}</td>
                     <td class="text-secondary small">${ord.created_at ? ord.created_at.split('T')[0] : ''}</td>
                     <td class="fw-semibold text-light">${ord.customer_name}</td>
-                    <td class="small text-light-50" style="max-width: 280px;">${itemsSummary}</td>
+                    <td class="small text-light-50" style="max-width: 250px;">${itemsSummary}</td>
+                    <td>
+                        ${ord.maps_location_link ? `
+                            <a href="${ord.maps_location_link}" target="_blank" class="btn btn-xs btn-outline-info text-decoration-none">
+                                <i class="fa-solid fa-map-location-dot me-1"></i> View Site Map
+                            </a>
+                        ` : '<span class="text-muted small">No Location</span>'}
+                    </td>
                     <td class="fw-bold text-success">₹${ord.grand_total.toFixed(2)}</td>
                     <td><small class="text-muted"><i class="fa-solid fa-user me-1"></i>${ord.created_by}</small></td>
                     <td class="text-center">
