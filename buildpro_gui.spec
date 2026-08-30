@@ -17,6 +17,7 @@ a = Analysis(
         ('sign.png', '.'),
     ],
     hiddenimports=[
+        'pycloudflared',
         'webview',
         'clr_loader',
         'pythonnet',

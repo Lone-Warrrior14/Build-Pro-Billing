@@ -14,7 +14,7 @@ import webview
 from app_web import app, init_app
 from database.connection import get_app_dir
 from services.backup_service import create_backup, last_backup_time
-from main import start_ngrok_tunnel
+from main import start_ngrok_tunnel, start_cloudflare_tunnel
 
 
 def run_flask_server(port: int = 5000):
@@ -41,8 +41,9 @@ def main():
     server_thread = threading.Thread(target=run_flask_server, args=(port,), daemon=True)
     server_thread.start()
 
-    # 4. Start ngrok tunnel in background thread
+    # 4. Start ngrok tunnel & Cloudflare backup tunnel in background threads
     threading.Thread(target=start_ngrok_tunnel, args=(port,), daemon=True).start()
+    threading.Thread(target=start_cloudflare_tunnel, args=(port,), daemon=True).start()
 
     # Allow Flask server 0.8 seconds to open socket
     time.sleep(0.8)

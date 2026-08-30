@@ -18,6 +18,7 @@ a = Analysis(
         ('sign.png', '.'),
     ],
     hiddenimports=[
+        'pycloudflared',
         'sqlalchemy.sql.default_comparator',
         'engineio.async_drivers.threading',
         'jinja2.ext',

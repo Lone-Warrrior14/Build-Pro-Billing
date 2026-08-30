@@ -57,6 +57,20 @@ def start_ngrok_tunnel(port: int):
         print(f"Warning: Could not start ngrok tunnel automatically: {err}")
 
 
+def start_cloudflare_tunnel(port: int):
+    """Attempt to start a Cloudflare tunnel (trycloudflare.com) as a backup/alternative remote access URL."""
+    try:
+        from pycloudflared import try_cloudflare
+        print("\n[Cloudflare] Starting Cloudflare Backup Tunnel...")
+        tunnel_url = try_cloudflare(port=port)
+        print("\n========================================================")
+        print(f"  ☁️ CLOUDFLARE BACKUP TUNNEL (UNLIMITED FREE REMOTE ACCESS):")
+        print(f"  👉 {tunnel_url.tunnel}")
+        print("========================================================\n")
+    except Exception as err:
+        print(f"Warning: Could not start Cloudflare tunnel: {err}")
+
+
 def start_browser(port: int):
     """Wait briefly for Flask server startup then open default web browser."""
     time.sleep(1.2)
@@ -96,6 +110,9 @@ def main():
     # Launch ngrok tunnel thread
     if not args.no_ngrok:
         threading.Thread(target=start_ngrok_tunnel, args=(args.port,), daemon=True).start()
+
+    # Launch Cloudflare backup tunnel thread
+    threading.Thread(target=start_cloudflare_tunnel, args=(args.port,), daemon=True).start()
 
     print("\n========================================================")
     print("      BUILDPRO BILLING WEB APPLICATION RUNNING")
