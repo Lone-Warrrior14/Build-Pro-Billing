@@ -553,11 +553,37 @@ function renderCustomersTable(list) {
             <td class="fw-bold text-warning">₹${c.current_balance.toFixed(2)}</td>
             <td>
                 <button class="btn btn-sm btn-outline-warning me-1" onclick="viewCustomerLedger(${c.id})"><i class="fa-solid fa-book me-1"></i> Ledger</button>
+                <button class="btn btn-sm btn-outline-info me-1" title="Edit Shop Details / Map" onclick="editCustomer(${c.id})"><i class="fa-solid fa-pen"></i></button>
                 ${state.currentRole === 'admin' ? `<button class="btn btn-sm btn-outline-danger" title="Remove Shop" onclick="deleteCustomer(${c.id}, '${c.shop_name}')"><i class="fa-solid fa-trash"></i></button>` : ''}
             </td>
         `;
         tbody.appendChild(tr);
     });
+}
+
+function editCustomer(id) {
+    const cust = state.shopsList.find(c => c.id === id);
+    if (!cust) return;
+
+    state.editingCustomerId = id;
+
+    const modalEl = document.getElementById('newCustomerModal');
+    if (!modalEl) return;
+
+    const modalTitle = document.getElementById('m-cust-modal-title');
+    if (modalTitle) modalTitle.innerText = "Edit Shop / Customer Details";
+
+    document.getElementById('m-cust-shop').value = cust.shop_name || '';
+    const personEl = document.getElementById('m-cust-person') || document.getElementById('m-cust-contact');
+    if (personEl) personEl.value = cust.contact_person || '';
+    if (document.getElementById('m-cust-phone')) document.getElementById('m-cust-phone').value = cust.phone || '';
+    if (document.getElementById('m-cust-gstin')) document.getElementById('m-cust-gstin').value = cust.gstin || '';
+    if (document.getElementById('m-cust-address')) document.getElementById('m-cust-address').value = cust.address || '';
+    if (document.getElementById('m-cust-maps-link')) document.getElementById('m-cust-maps-link').value = cust.maps_location_link || '';
+    if (document.getElementById('m-cust-balance')) document.getElementById('m-cust-balance').value = cust.opening_balance || 0;
+
+    const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
 }
 
 function filterCustomersTable() {
@@ -2839,14 +2865,20 @@ async function submitAddCustomer() {
     const address = (document.getElementById('m-cust-address')?.value || '').trim();
     const balance = parseFloat(document.getElementById('m-cust-balance')?.value || 0);
 
+    const mapsLocationLink = (document.getElementById('m-cust-maps-link')?.value || '').trim();
+
     if (!shopName) {
         alert("Shop / Customer Name is required.");
         return;
     }
 
     try {
-        const res = await fetch('/api/customers', {
-            method: 'POST',
+        const isEdit = !!state.editingCustomerId;
+        const url = isEdit ? `/api/customers/${state.editingCustomerId}` : '/api/customers';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 shop_name: shopName,
@@ -2854,13 +2886,15 @@ async function submitAddCustomer() {
                 phone: phone,
                 gstin: gstin,
                 address: address,
+                maps_location_link: mapsLocationLink,
                 opening_balance: balance
             })
         });
 
         const data = await res.json();
         if (data.success) {
-            alert(data.message || "Customer added successfully!");
+            alert(data.message || (isEdit ? "Customer updated successfully!" : "Customer added successfully!"));
+            state.editingCustomerId = null;
             const modalEl = document.getElementById('newCustomerModal');
             if (modalEl) {
                 const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
@@ -2871,10 +2905,10 @@ async function submitAddCustomer() {
             if (typeof loadCustomers === 'function') await loadCustomers();
             await loadAllData();
         } else {
-            alert(data.error || "Failed to add customer.");
+            alert(data.error || "Failed to save customer.");
         }
     } catch (e) {
-        console.error("Add Customer Error:", e);
+        console.error("Save Customer Error:", e);
         alert("Server error while adding customer.");
     }
 }

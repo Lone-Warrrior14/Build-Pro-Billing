@@ -267,6 +267,28 @@ def delete_customer(customer_id: int):
         return jsonify({"success": True, "message": "Customer/Shop removed successfully"})
 
 
+@app.route("/api/customers/<int:customer_id>", methods=["PUT"])
+def update_customer(customer_id: int):
+    with session_scope() as session:
+        cust = session.get(Customer, customer_id)
+        if not cust:
+            return jsonify({"success": False, "error": "Customer/Shop not found"}), 404
+        data = request.json or {}
+        if "shop_name" in data and data["shop_name"].strip():
+            cust.shop_name = data["shop_name"].strip()
+        if "contact_person" in data:
+            cust.contact_person = data["contact_person"].strip()
+        if "phone" in data:
+            cust.phone = data["phone"].strip()
+        if "gstin" in data:
+            cust.gstin = data["gstin"].strip()
+        if "address" in data:
+            cust.address = data["address"].strip()
+        if "maps_location_link" in data:
+            cust.maps_location_link = data["maps_location_link"].strip()
+        return jsonify({"success": True, "message": "Customer/Shop updated successfully"})
+
+
 @app.route("/api/customers/<int:customer_id>/ledger", methods=["GET"])
 def get_customer_ledger(customer_id: int):
     with session_scope() as session:
