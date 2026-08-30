@@ -1,0 +1,358 @@
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #0f172a;
+    color: #f8fafc;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* Glassmorphism Navigation */
+.navbar {
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.brand-badge {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+}
+
+.nav-link {
+    color: #94a3b8 !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Cards & Glass Container */
+.card, .card-custom {
+    background-color: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #f8fafc !important;
+    border-radius: 1rem !important;
+}
+
+.card-header {
+    background-color: transparent !important;
+    border-bottom: 1px solid #334155 !important;
+    color: #f8fafc !important;
+}
+
+.card-body {
+    background-color: transparent !important;
+    color: #f8fafc !important;
+}
+
+.glass-card {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Metric Cards */
+.metric-card {
+    border-left: 4px solid #3b82f6;
+}
+
+.metric-value {
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Inputs & Form Elements */
+.form-control, .form-select {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+    border-radius: 0.5rem !important;
+    padding: 0.625rem 0.875rem !important;
+}
+
+/* Fix browser native select option contrast (prevents white-on-white text in select dropdown options) */
+select.form-select option {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: rgba(15, 23, 42, 0.95) !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+    color: #ffffff !important;
+}
+
+.form-control::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* Form labels & Subtitles global high-contrast fixes */
+.form-label, label {
+    color: #cbd5e1 !important;
+}
+
+.text-muted, small.text-muted, p.text-muted {
+    color: #94a3b8 !important;
+}
+
+/* Fix Bootstrap modal contrast and text colors */
+.modal-content {
+    background-color: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 1rem !important;
+    color: #f8fafc !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid #334155 !important;
+}
+
+.modal-footer {
+    border-top: 1px solid #334155 !important;
+}
+
+/* Disabled input readability fix */
+.form-control:disabled, .form-control[readonly] {
+    background-color: rgba(15, 23, 42, 0.9) !important;
+    color: #f8fafc !important;
+    border-color: #475569 !important;
+    opacity: 1 !important;
+}
+
+.bg-dark-subtle {
+    background-color: rgba(15, 23, 42, 0.9) !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155 !important;
+}
+
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    font-weight: 500;
+    border-radius: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.45);
+    transform: translateY(-1px);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    font-weight: 500;
+    border-radius: 0.5rem;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+    border-radius: 0.5rem;
+}
+
+/* Tables */
+.table-custom {
+    color: #e2e8f0 !important;
+    margin-bottom: 0;
+    --bs-table-bg: transparent !important;
+    --bs-table-color: #e2e8f0 !important;
+}
+
+.table-custom th {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+    color: #94a3b8 !important;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid #334155 !important;
+}
+
+.table-custom td {
+    background-color: transparent !important;
+    color: #f1f5f9 !important;
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5) !important;
+    vertical-align: middle;
+}
+
+.table-custom tbody tr {
+    background-color: transparent !important;
+}
+
+.table-custom tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Ensure text-muted is crisp and readable on dark themes */
+.text-muted {
+    color: #94a3b8 !important;
+}
+
+/* Outline light button fix for dark mode */
+.btn-outline-light {
+    color: #f8fafc !important;
+    border-color: #475569 !important;
+    background-color: rgba(30, 41, 59, 0.5) !important;
+}
+
+.btn-outline-light:hover {
+    color: #ffffff !important;
+    background-color: #334155 !important;
+    border-color: #64748b !important;
+}
+
+/* Badges */
+.badge-status {
+    padding: 0.35em 0.65em;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.375rem;
+}
+
+.badge-paid {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-partial {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-unpaid {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Modals */
+.modal-content {
+    background-color: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    color: #f8fafc;
+}
+
+.modal-header {
+    border-bottom: 1px solid #334155;
+}
+
+.modal-footer {
+    border-top: 1px solid #334155;
+}
+
+/* Toast/Alert */
+.toast-container {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 1100;
+}
+
+/* Tom Select & Dropdown Stacking Fixes */
+.glass-card, .card, .card-custom {
+    position: relative;
+    z-index: 1;
+}
+
+.glass-card:focus-within, .card:focus-within, .card-custom:focus-within {
+    z-index: 1050 !important;
+}
+
+.table-responsive {
+    overflow: visible !important;
+}
+
+.table-custom td {
+    position: relative;
+}
+
+.table-custom td:focus-within {
+    z-index: 1050 !important;
+}
+
+.form-select, select.form-select {
+    position: relative;
+    z-index: 10;
+}
+
+.ts-control {
+    background-color: rgba(15, 23, 42, 0.9) !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+    border-radius: 0.5rem !important;
+    padding: 0.625rem 0.875rem !important;
+}
+.ts-control input {
+    color: #ffffff !important;
+}
+.ts-dropdown {
+    background-color: #0f172a !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8) !important;
+    z-index: 9999 !important;
+}
+.ts-dropdown .option {
+    color: #f8fafc !important;
+    padding: 0.6rem 1rem !important;
+}
+.ts-dropdown .option:hover, .ts-dropdown .option.active {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+}

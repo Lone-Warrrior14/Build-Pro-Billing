@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuildPro Billing System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tom Select CSS (Searchable Dropdown) -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="/static/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Login Overlay Screen (bcrypt authenticated) -->
+    <div id="login-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); z-index: 9999;">
+        <div class="glass-card p-4 p-md-5 rounded-4 shadow-lg border border-secondary" style="max-width: 420px; width: 90%;">
+            <div class="text-center mb-4">
+                <img src="/static/bill logo.png" alt="BUILD PRO READY MIX Logo" height="70" class="rounded-3 bg-white px-3 py-2 shadow-sm mb-3">
+                <h4 class="fw-bold text-white mb-1">BUILD PRO READY MIX</h4>
+                <p class="text-secondary small">Sign in to access Billing & Management</p>
+            </div>
+            
+            <div id="login-alert" class="alert alert-danger d-none py-2 px-3 small" role="alert"></div>
+
+            <form id="login-form" onsubmit="handleLoginSubmit(event)">
+                <div class="mb-3">
+                    <label class="form-label text-light small fw-medium">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark text-secondary border-end-0"><i class="fa-solid fa-user"></i></span>
+                        <input type="text" id="login-username" class="form-control border-start-0 ps-0" placeholder="admin / sales" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-light small fw-medium">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark text-secondary border-end-0"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="login-password" class="form-control border-start-0 border-end-0 ps-0" placeholder="••••••••" required>
+                        <button type="button" class="btn btn-outline-secondary bg-dark text-secondary border-start-0" onclick="togglePasswordVisibility('login-password', this)">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="login-submit-btn" class="btn btn-primary w-100 py-2 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                </button>
+            </form>
+
+            <div class="mt-4 pt-3 border-top border-secondary text-center">
+                <small class="text-secondary">Protected with <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">bcrypt</span> encryption</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand d-flex align-items-center py-1" href="#">
+                <img src="/static/bill logo.png" alt="BUILD PRO READY MIX Logo" height="54" class="rounded-2 bg-white px-3 py-1 shadow-sm">
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto ms-4 gap-1">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="nav-dashboard" href="#" onclick="switchTab('dashboard')">
+                            <i class="fa-solid fa-chart-line me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="nav-new-bill" href="#" onclick="openInvoiceGeneratorForm()">
+                            <i class="fa-solid fa-file-invoice-dollar me-1"></i> Invoice Generator
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-warning fw-semibold" id="nav-request-order" href="#" onclick="openRequestOrderForm()">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Request Order
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-info fw-semibold" id="nav-construction-bill" href="#" onclick="switchTab('construction-bill')">
+                            <i class="fa-solid fa-ruler-combined me-1"></i> Construction (SqFt) Billing
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="nav-invoices" href="#" onclick="switchTab('invoices')">
+                            <i class="fa-solid fa-receipt me-1"></i> Invoices
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-warning fw-semibold" id="nav-new-orders" href="#" onclick="switchTab('new-orders')">
+                            <i class="fa-solid fa-boxes-packing me-1"></i> New Orders
+                            <span id="pending-orders-badge" class="badge bg-danger rounded-pill ms-1 d-none">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-info fw-semibold" id="nav-draft-orders" href="#" onclick="switchTab('draft-orders')">
+                            <i class="fa-solid fa-file-signature me-1"></i> Draft Orders
+                            <span id="draft-orders-badge" class="badge bg-info text-dark rounded-pill ms-1 d-none">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="nav-customers" href="#" onclick="switchTab('customers')">
+                            <i class="fa-solid fa-store me-1"></i> Customers / Shops
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-info fw-semibold" id="nav-clients" href="#" onclick="switchTab('clients')">
+                            <i class="fa-solid fa-user-shield me-1"></i> Construction Clients
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="nav-products" href="#" onclick="switchTab('products')">
+                            <i class="fa-solid fa-cubes me-1"></i> Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-warning" id="nav-recycle-bin" href="#" onclick="switchTab('recycle-bin')">
+                            <i class="fa-solid fa-trash-can me-1"></i> Recycle Bin
+                        </a>
+                    </li>
+                    <li class="nav-item admin-only">
+                        <a class="nav-link text-info" id="nav-users" href="#" onclick="switchTab('users')">
+                            <i class="fa-solid fa-user-gear me-1"></i> User Management
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-end d-none d-md-block">
+                        <div class="fw-semibold text-light" id="user-display-name">Guest User</div>
+                        <div class="small mt-1"><span id="user-role-badge" class="badge bg-secondary">Role: Guest</span></div>
+                    </div>
+                    <button id="header-login-btn" class="btn btn-primary btn-sm px-3 rounded-pill" onclick="openLoginOverlay()">
+                        <i class="fa-solid fa-right-to-bracket me-1"></i> Sign In
+                    </button>
+                    <button id="header-pw-btn" class="btn btn-outline-warning btn-sm px-3 rounded-pill d-none" data-bs-toggle="modal" data-bs-target="#changePasswordModal" onclick="openChangePasswordModal()" title="Change Password">
+                        <i class="fa-solid fa-key me-1"></i> Change Password
+                    </button>
+                    <button id="header-logout-btn" class="btn btn-outline-danger btn-sm px-3 rounded-pill d-none" onclick="logout()" title="Logout">
+                        <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <div class="container-fluid px-4 pb-5">
+        
+        <!-- DASHBOARD TAB -->
+        <div id="tab-dashboard" class="tab-page">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h3 class="fw-bold mb-1">Business Overview</h3>
+                    <p class="text-muted mb-0">Real-time sales statistics and recent invoices</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <select id="kpi-month-select" class="form-select bg-dark text-light border-secondary shadow-sm" style="min-width: 180px;" onchange="onKpiMonthFilterChange(this.value)">
+                        <option value="all">📅 All Time (Total)</option>
+                    </select>
+                    <button id="dashboard-create-btn" class="btn btn-primary text-nowrap" onclick="switchTab('new-bill')">
+                        <i class="fa-solid fa-plus me-1"></i> Create Invoice
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary KPI Cards -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <div class="glass-card p-3 metric-card">
+                        <div class="text-muted small mb-1 fw-medium" id="kpi-label-sales">TOTAL SALES</div>
+                        <div class="metric-value" id="kpi-total-sales">₹0.00</div>
+                        <div class="text-secondary small mt-1" id="kpi-sub-sales"><i class="fa-solid fa-arrow-trend-up text-success"></i> All time revenue</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 metric-card" style="border-left-color: #10b981;">
+                        <div class="text-muted small mb-1 fw-medium" id="kpi-label-paid">COLLECTED AMOUNT</div>
+                        <div class="metric-value text-success" id="kpi-paid">₹0.00</div>
+                        <div class="text-secondary small mt-1" id="kpi-sub-paid"><i class="fa-solid fa-circle-check text-success"></i> Cleared payments</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 metric-card" style="border-left-color: #ef4444;">
+                        <div class="text-muted small mb-1 fw-medium" id="kpi-label-outstanding">OUTSTANDING DUES</div>
+                        <div class="metric-value text-danger" id="kpi-outstanding">₹0.00</div>
+                        <div class="text-secondary small mt-1" id="kpi-sub-outstanding"><i class="fa-solid fa-clock-history text-warning"></i> Pending receivable</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 metric-card" style="border-left-color: #8b5cf6;">
+                        <div class="text-muted small mb-1 fw-medium" id="kpi-label-count">TOTAL INVOICES</div>
+                        <div class="metric-value" id="kpi-invoice-count">0</div>
+                        <div class="text-secondary small mt-1" id="kpi-sub-count"><i class="fa-solid fa-file-lines"></i> Completed bills</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary Monthly Quick Stats -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="glass-card p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-info-subtle p-3 me-3 text-info">
+                            <i class="fa-solid fa-calendar-check fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-medium">THIS MONTH'S REVENUE</div>
+                            <div class="fs-5 fw-bold text-info" id="kpi-current-month-sales">₹0.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="glass-card p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-success-subtle p-3 me-3 text-success">
+                            <i class="fa-solid fa-hand-holding-dollar fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-medium">THIS MONTH'S COLLECTED</div>
+                            <div class="fs-5 fw-bold text-success" id="kpi-current-month-paid">₹0.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="glass-card p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-primary-subtle p-3 me-3 text-primary">
+                            <i class="fa-solid fa-chart-line fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-medium">MONTHLY AVG REVENUE</div>
+                            <div class="fs-5 fw-bold text-light" id="kpi-monthly-avg">₹0.00 / mo</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Invoices -->
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Recent Invoices</h5>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-invoices-tbody">
+                            <tr><td colspan="6" class="text-center text-muted py-4">Loading invoices...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Monthly Overview Card -->
+            <div class="glass-card p-4 mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0"><i class="fa-solid fa-calendar-days me-2 text-info"></i>Monthly Sales Overview</h5>
+                    <small class="text-muted">Saved month-by-month revenue & collections history</small>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Bills Issued</th>
+                                <th>Total Sales (₹)</th>
+                                <th>Collected Amount (₹)</th>
+                                <th>Outstanding Dues (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthly-overview-tbody">
+                            <tr><td colspan="5" class="text-center text-muted py-4">Loading monthly sales records...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW ORDERS TAB (Field Order Requests & Combined Inventory Prep) -->
+        <div id="tab-new-orders" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-boxes-packing text-warning me-2"></i> New Orders & Inventory Preparation</h3>
+                    <p class="text-muted mb-0">Review sales manager order requests, inspect site map locations, and prepare combined stock for upcoming sales</p>
+                </div>
+                <button class="btn btn-outline-light btn-sm" onclick="loadNewOrders()">
+                    <i class="fa-solid fa-rotate me-1"></i> Refresh Orders
+                </button>
+            </div>
+
+            <!-- Combined Inventory Preparation Summary Card -->
+            <div class="card card-custom mb-4 border-warning">
+                <div class="card-header bg-transparent border-secondary py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-warning">
+                        <i class="fa-solid fa-warehouse me-2"></i> Total Inventory Required to Fulfill Pending Orders
+                    </h5>
+                    <span class="badge bg-warning text-dark px-3 py-2 fw-bold" id="total-pending-orders-count">0 Pending Orders</span>
+                </div>
+                <div class="card-body">
+                    <div id="combined-stock-container" class="row g-3">
+                        <div class="col-12 text-center text-muted py-3">No pending stock requests.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Order Requests Table -->
+            <div class="card card-custom">
+                <div class="card-header bg-transparent border-secondary py-3">
+                    <h5 class="fw-bold mb-0 text-light"><i class="fa-solid fa-clipboard-list me-2 text-info"></i> Pending Order Requests</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Date</th>
+                                    <th>Customer / Shop</th>
+                                    <th>Requested Items</th>
+                                    <th>Site Location (Map)</th>
+                                    <th>Total (₹)</th>
+                                    <th class="admin-only">Requested By</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="order-requests-tbody">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Loading pending order requests...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DRAFT ORDERS TAB (Approved Draft Requests Ready for Invoice Generation) -->
+        <div id="tab-draft-orders" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-file-signature text-info me-2"></i> Draft Orders</h3>
+                    <p class="text-muted mb-0">Approved order requests queued as drafts. Generate official invoices with custom invoice numbers when ready.</p>
+                </div>
+                <button class="btn btn-outline-light btn-sm" onclick="loadDraftOrders()">
+                    <i class="fa-solid fa-rotate me-1"></i> Refresh Drafts
+                </button>
+            </div>
+
+            <div class="card card-custom">
+                <div class="card-header bg-transparent border-secondary py-3">
+                    <h5 class="fw-bold mb-0 text-light"><i class="fa-solid fa-file-invoice me-2 text-warning"></i> Approved Draft Orders</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Draft #</th>
+                                    <th>Date</th>
+                                    <th>Customer / Shop</th>
+                                    <th>Products Ordered</th>
+                                    <th>Total (₹)</th>
+                                    <th>Approved / Created By</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="draft-orders-tbody">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Loading draft orders...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW BILL TAB -->
+        <div id="tab-new-bill" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1" id="new-bill-title">Create New Invoice</h3>
+                    <p class="text-muted mb-0" id="new-bill-subtitle">Select customer, add products with auto-price memory</p>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Left: Form inputs -->
+                <div class="col-lg-8">
+                    <!-- Customer & Invoice Details -->
+                    <div class="glass-card p-4 mb-4">
+                        <h5 class="fw-bold mb-3 text-primary"><i class="fa-solid fa-user-check me-2"></i>1. Billing & Customer Details</h5>
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label text-muted small fw-bold">SELECT CUSTOMER / SHOP *</label>
+                                <select class="form-select" id="bill-customer-select" onchange="onCustomerSelectChange()">
+                                    <option value="">-- Choose Customer / Shop --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4" id="bill-invoice-number-container">
+                                <label class="form-label text-muted small fw-bold"><i class="fa-solid fa-hashtag me-1 text-warning"></i> INVOICE NUMBER (MANUAL ENTRY)</label>
+                                <input type="text" class="form-control fw-bold text-warning" id="bill-invoice-number" placeholder="Auto-generated if empty (e.g. INV-005)">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button class="btn btn-outline-light w-100" onclick="openAddPartyModal('shop')">
+                                    <i class="fa-solid fa-user-plus me-1"></i> Add New Shop
+                                </button>
+                            </div>
+                        </div>
+                        <div id="customer-info-box" class="mt-3 p-3 rounded d-none" style="background-color: rgba(15, 23, 42, 0.9); border: 1px solid #334155;">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <div class="fw-bold text-light" id="cbox-name">Shop Name</div>
+                                    <small class="text-secondary" id="cbox-details">Phone: - | GSTIN: -</small>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-secondary">Prev Balance / Price Memory</small>
+                                    <div class="fw-bold text-warning" id="cbox-balance">₹0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Products Table -->
+                    <div class="glass-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-primary mb-0"><i class="fa-solid fa-cart-flatbed me-2"></i>2. Invoice Items</h5>
+                            <button class="btn btn-sm btn-primary" onclick="addBillLine()">
+                                <i class="fa-solid fa-plus me-1"></i> Add Line Item
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-custom" id="bill-items-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 35%;">Product</th>
+                                        <th style="width: 15%;">Qty (Bags)</th>
+                                        <th style="width: 20%;">Price/Bag (₹)</th>
+                                        <th style="width: 20%;">Line Total (₹)</th>
+                                        <th style="width: 10%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bill-items-tbody">
+                                    <!-- Dynamic rows created via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Summary & Pay -->
+                <div class="col-lg-4">
+                    <div class="glass-card p-4">
+                        <h5 class="fw-bold mb-4 text-primary"><i class="fa-solid fa-calculator me-2"></i>3. Billing Summary</h5>
+                        
+                        <div class="d-flex justify-content-between py-2 border-bottom border-secondary-subtle">
+                            <span class="text-muted">Subtotal (Taxable)</span>
+                            <span class="fw-bold" id="bill-subtotal">₹0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between py-2 border-bottom border-secondary-subtle">
+                            <span class="text-muted">Est. Total GST (18%)</span>
+                            <span class="fw-bold" id="bill-gst">₹0.00</span>
+                        </div>
+                        
+                        <div class="mb-3 mt-3">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="bill-has-transport-checkbox" onchange="toggleTransportInput()">
+                                <label class="form-check-input-label text-light fw-bold small" for="bill-has-transport-checkbox">
+                                    <i class="fa-solid fa-truck me-1 text-info"></i> Add Extra Transport Charge
+                                </label>
+                            </div>
+                            <div id="transport-input-container" class="d-none mt-2">
+                                <label class="form-label text-muted small fw-bold">CUSTOM TRANSPORT AMOUNT (₹)</label>
+                                <input type="number" class="form-control fw-bold text-info" id="bill-transport" value="0" step="1" placeholder="Enter transport charge" oninput="recalculateBillTotals()">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="bill-has-service-charge-checkbox" onchange="toggleServiceChargeInput()">
+                                <label class="form-check-input-label text-light fw-bold small" for="bill-has-service-charge-checkbox">
+                                    <i class="fa-solid fa-bell-concierge me-1 text-warning"></i> Add Service Charge
+                                </label>
+                            </div>
+                            <div id="service-charge-input-container" class="d-none mt-2">
+                                <label class="form-label text-muted small fw-bold">CUSTOM SERVICE CHARGE (₹)</label>
+                                <input type="number" class="form-control fw-bold text-warning" id="bill-service-charge" value="0" step="1" placeholder="Enter service charge" oninput="recalculateBillTotals()">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center py-3 my-2 border-top border-bottom border-primary">
+                            <span class="fs-5 fw-bold">Grand Total</span>
+                            <span class="fs-4 fw-bold text-success" id="bill-grand-total">₹0.00</span>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <div id="payment-fields-container">
+                            <h6 class="fw-bold mb-3"><i class="fa-solid fa-money-bill-wave me-2 text-success"></i>Payment Details</h6>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-bold">INITIAL PAYMENT RECEIVED (₹)</label>
+                                <input type="number" class="form-control" id="bill-payment-amount" value="0" step="1">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-bold">PAYMENT METHOD</label>
+                                <select class="form-select" id="bill-payment-method">
+                                    <option value="cash">Cash</option>
+                                    <option value="upi">UPI / Online</option>
+                                    <option value="bank">Bank Transfer</option>
+                                    <option value="other">Cheque / Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold"><i class="fa-solid fa-map-location-dot me-1 text-info"></i> GOOGLE MAPS LOCATION LINK</label>
+                            <input type="url" class="form-control" id="bill-maps-link" placeholder="e.g. https://maps.google.com/?q=12.9716,77.5946">
+                            <small class="text-secondary" style="font-size: 0.75rem;">Optional delivery site map link for sales managers</small>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-muted small fw-bold">NOTES / MEMO</label>
+                            <input type="text" class="form-control" id="bill-notes" placeholder="Optional invoice notes">
+                        </div>
+
+                        <button id="btn-submit-bill" class="btn btn-success btn-lg w-100 py-3 fw-bold" onclick="submitInvoice()">
+                            <i class="fa-solid fa-print me-2"></i> Generate Invoice & Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONSTRUCTION SQFT BILLING TAB -->
+        <div id="tab-construction-bill" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1 text-info"><i class="fa-solid fa-ruler-combined me-2"></i> Construction Works (SqFt) Billing</h3>
+                    <p class="text-muted mb-0">Create construction bills based on total SqFt area and Rate per SqFt for civil & construction contracts</p>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Left: Form inputs -->
+                <div class="col-lg-8">
+                    <!-- Customer Details -->
+                    <div class="glass-card p-4 mb-4">
+                        <h5 class="fw-bold mb-3 text-info"><i class="fa-solid fa-user-check me-2"></i>1. Client / Project Details</h5>
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label text-muted small fw-bold">SELECT CLIENT / SHOP *</label>
+                                <select class="form-select" id="sqft-customer-select" onchange="onSqftCustomerSelectChange()">
+                                    <option value="">-- Choose Client --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-muted small fw-bold"><i class="fa-solid fa-hashtag me-1 text-warning"></i> INVOICE NUMBER</label>
+                                <input type="text" class="form-control fw-bold text-warning" id="sqft-invoice-number" placeholder="Auto-generated if empty">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button class="btn btn-outline-info w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#newClientModal">
+                                    <i class="fa-solid fa-user-plus me-1"></i> Add Client
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Construction Work Scope / SqFt Items Table -->
+                    <div class="glass-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-info mb-0"><i class="fa-solid fa-layer-group me-2"></i>2. Construction Work Scope & SqFt Measurement</h5>
+                            <button class="btn btn-sm btn-info text-white fw-bold" onclick="addSqftBillLine()">
+                                <i class="fa-solid fa-plus me-1"></i> Add Work Scope
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-custom" id="sqft-items-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 35%;">Work Description / Scope</th>
+                                        <th style="width: 15%;">SqFt Area</th>
+                                        <th style="width: 20%;">Rate / SqFt (₹)</th>
+                                        <th style="width: 20%;">Work Total (₹)</th>
+                                        <th style="width: 10%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sqft-items-tbody">
+                                    <!-- Dynamic rows created via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Summary & Pay -->
+                <div class="col-lg-4">
+                    <div class="glass-card p-4">
+                        <h5 class="fw-bold mb-4 text-info"><i class="fa-solid fa-calculator me-2"></i>3. Billing Summary</h5>
+                        
+                        <div class="d-flex justify-content-between py-2 border-bottom border-secondary-subtle">
+                            <span class="text-muted">Total Construction SqFt Value</span>
+                            <span class="fw-bold text-light" id="sqft-subtotal">₹0.00</span>
+                        </div>
+                        
+                        <div class="mb-3 mt-3">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="sqft-include-gst-checkbox" onchange="recalculateSqftBillTotals()">
+                                <label class="form-check-input-label text-light fw-bold small" for="sqft-include-gst-checkbox">
+                                    <i class="fa-solid fa-receipt me-1 text-warning"></i> Add 18% GST (CGST 9% + SGST 9%)
+                                </label>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="sqft-has-transport-checkbox" onchange="toggleSqftTransportInput()">
+                                <label class="form-check-input-label text-light fw-bold small" for="sqft-has-transport-checkbox">
+                                    <i class="fa-solid fa-truck me-1 text-info"></i> Add Extra Transport / Mobilization
+                                </label>
+                            </div>
+                            <div id="sqft-transport-input-container" class="d-none mt-2">
+                                <label class="form-label text-muted small fw-bold">TRANSPORT / MOBILIZATION AMOUNT (₹)</label>
+                                <input type="number" class="form-control fw-bold text-info" id="sqft-transport" value="0" step="1" placeholder="Enter transport charge" oninput="recalculateSqftBillTotals()">
+                            </div>
+                        </div>
+
+                        <div id="sqft-gst-breakdown-row" class="d-none border-top border-secondary-subtle pt-2 mt-2">
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span>SGST (9%)</span>
+                                <span id="sqft-sgst-val">₹0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span>CGST (9%)</span>
+                                <span id="sqft-cgst-val">₹0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center py-3 my-2 border-top border-bottom border-info">
+                            <span class="fs-5 fw-bold">Net Payable</span>
+                            <span class="fs-4 fw-bold text-success" id="sqft-grand-total">₹0.00</span>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <div id="sqft-payment-fields-container">
+                            <h6 class="fw-bold mb-3"><i class="fa-solid fa-money-bill-wave me-2 text-success"></i>Initial Advance / Payment</h6>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-bold">ADVANCE RECEIVED (₹)</label>
+                                <input type="number" class="form-control" id="sqft-payment-amount" value="0" step="1">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-bold">PAYMENT METHOD</label>
+                                <select class="form-select" id="sqft-payment-method">
+                                    <option value="cash">Cash</option>
+                                    <option value="upi">UPI / Online</option>
+                                    <option value="bank">Bank Transfer</option>
+                                    <option value="other">Cheque / Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">SITE LOCATION / MAPS LINK</label>
+                            <input type="url" class="form-control" id="sqft-maps-location" placeholder="Paste Google Maps URL">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">WORK / CONTRACT NOTES</label>
+                            <textarea class="form-control" id="sqft-bill-notes" rows="2" placeholder="e.g. Slab casting, plastering work notes"></textarea>
+                        </div>
+
+                        <button class="btn btn-info w-100 py-3 fw-bold fs-6 text-white shadow-lg" id="sqft-submit-bill-btn" onclick="submitSqftInvoice()">
+                            <i class="fa-solid fa-check-circle me-2"></i> Issue SqFt Construction Bill
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INVOICES TAB -->
+        <div id="tab-invoices" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1">Invoice Management</h3>
+                    <p class="text-muted mb-0">Search, view, record payments or print invoices</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-4">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" class="form-control" id="invoice-search-input" placeholder="Search by Invoice # or Customer Name..." onkeyup="filterInvoices()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Customer / Shop</th>
+                                <th>Grand Total</th>
+                                <th>Paid</th>
+                                <th>Balance</th>
+                                <th>Payment Status</th>
+                                <th class="admin-only">Created By</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoices-list-tbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUSTOMERS TAB -->
+        <div id="tab-customers" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-store text-primary me-2"></i> Customer / Shop Master</h3>
+                    <p class="text-muted mb-0">Manage customer ledgers, GST details, and site location maps for standard products</p>
+                </div>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
+                    <i class="fa-solid fa-user-plus me-1"></i> Add New Shop / Customer
+                </button>
+            </div>
+
+            <div class="glass-card p-4">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-secondary"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" id="search-customers-input" placeholder="Search customer by shop name, contact, phone, or GSTIN..." oninput="filterCustomersTable()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Shop Name</th>
+                                <th>Contact Person</th>
+                                <th>Phone</th>
+                                <th>GSTIN</th>
+                                <th>Location Map</th>
+                                <th>Opening Balance</th>
+                                <th>Current Balance</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customers-list-tbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONSTRUCTION CLIENTS TAB -->
+        <div id="tab-clients" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1 text-info"><i class="fa-solid fa-user-shield me-2"></i> Construction Clients Master</h3>
+                    <p class="text-muted mb-0">Manage clients, sites, ledgers, and project locations for Construction (SqFt) billing</p>
+                </div>
+                <button class="btn btn-info text-white fw-bold" data-bs-toggle="modal" data-bs-target="#newClientModal">
+                    <i class="fa-solid fa-user-plus me-1"></i> Add New Construction Client
+                </button>
+            </div>
+
+            <div class="glass-card p-4">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-secondary"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" id="search-clients-input" placeholder="Search client by name, contact, or phone..." oninput="filterClientsTable()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Client / Project Name</th>
+                                <th>Contact Person</th>
+                                <th>Phone</th>
+                                <th>Site / Location Map</th>
+                                <th>Opening Balance</th>
+                                <th>Current Balance</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clients-list-tbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRODUCTS TAB -->
+        <div id="tab-products" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h3 class="fw-bold mb-1">Product Catalog & Monthly Analytics</h3>
+                    <p class="text-muted mb-0">Manage product details, variants, MRPs, and view monthly performance KPIs</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <select id="product-month-filter" class="form-select bg-dark text-light border-secondary shadow-sm" style="min-width: 170px;" onchange="filterProductKPIsByMonth()">
+                        <option value="all">📅 All Time Stats</option>
+                    </select>
+                    <button id="btn-add-new-product" class="btn btn-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#newProductModal">
+                        <i class="fa-solid fa-plus me-1"></i> Add New Product
+                    </button>
+                </div>
+            </div>
+
+            <!-- PRODUCT PERFORMANCE KPIS -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="glass-card p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-primary bg-opacity-25 p-3 me-3 text-primary fs-4">
+                            <i class="fa-solid fa-cubes"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-bold">ACTIVE PRODUCTS</div>
+                            <div class="fs-4 fw-bold text-light" id="prod-kpi-count">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-success bg-opacity-25 p-3 me-3 text-success fs-4">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-bold">TOTAL UNITS SOLD</div>
+                            <div class="fs-4 fw-bold text-success" id="prod-kpi-units">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-warning bg-opacity-25 p-3 me-3 text-warning fs-4">
+                            <i class="fa-solid fa-indian-rupee-sign"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-bold">TOTAL PRODUCT REVENUE</div>
+                            <div class="fs-4 fw-bold text-warning" id="prod-kpi-revenue">₹0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-info bg-opacity-25 p-3 me-3 text-info fs-4">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-bold">TOP SELLER</div>
+                            <div class="fs-6 fw-bold text-info text-truncate" id="prod-kpi-top-seller" style="max-width: 140px;">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PRODUCT ANALYTICS CHARTS -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="glass-card p-4">
+                        <h6 class="fw-bold mb-3 text-info"><i class="fa-solid fa-chart-simple me-2"></i> Sales Volume per Product (Bags/Units)</h6>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="productSalesVolumeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="glass-card p-4">
+                        <h6 class="fw-bold mb-3 text-success"><i class="fa-solid fa-chart-pie me-2"></i> Revenue Share per Product (₹)</h6>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="productRevenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-list-check me-2 text-primary"></i>Product Inventory & Performance Table</h5>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Brand</th>
+                                <th>Product Name</th>
+                                <th>Variant</th>
+                                <th>MRP (₹)</th>
+                                <th>GST %</th>
+                                <th>Total Units Sold</th>
+                                <th>Total Revenue (₹)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-list-tbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: SEALED BILLS -->
+        <div id="tab-sealed-bills" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-stamp me-2 text-info"></i>Sealed Bills</h3>
+                    <p class="text-secondary mb-0">Official invoices marked with seal verification and authorized signature.</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-4">
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Customer / Shop</th>
+                                <th>Grand Total</th>
+                                <th>Status</th>
+                                <th>Seal Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sealed-bills-tbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: RECYCLE BIN -->
+        <div id="tab-recycle-bin" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-trash-can me-2 text-warning"></i>Recycle Bin</h3>
+                    <p class="text-muted mb-0">View deleted invoices. Restore them or permanently purge them.</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-4">
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Customer / Shop</th>
+                                <th>Grand Total</th>
+                                <th>Paid</th>
+                                <th>Balance</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recycle-bin-tbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- USERS / SALES MANAGERS TAB (ADMIN ONLY) -->
+        <div id="tab-users" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-user-gear me-2 text-info"></i>User & Sales Manager Management</h3>
+                    <p class="text-muted mb-0">Add new sales managers or manage system permissions</p>
+                </div>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newUserModal">
+                    <i class="fa-solid fa-user-plus me-1"></i> Add Sales Manager / User
+                </button>
+            </div>
+
+            <div class="glass-card p-4">
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Full Name</th>
+                                <th>Role</th>
+                                <th>Total Invoices</th>
+                                <th>Orders Requested</th>
+                                <th>Total Sales Generated</th>
+                                <th>Created Date</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-list-tbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL: ADD SHOP / CUSTOMER -->
+    <div class="modal fade" id="newCustomerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-store me-2 text-primary"></i>Add New Shop / Customer</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-customer-form">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">SHOP NAME *</label>
+                            <input type="text" class="form-control" id="m-cust-shop" placeholder="e.g. Royal Hardware & Building Materials" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">CONTACT PERSON</label>
+                            <input type="text" class="form-control" id="m-cust-person">
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">PHONE NUMBER</label>
+                                <input type="text" class="form-control" id="m-cust-phone">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">GSTIN</label>
+                                <input type="text" class="form-control" id="m-cust-gstin">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">ADDRESS</label>
+                            <textarea class="form-control" id="m-cust-address" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted"><i class="fa-solid fa-map-location-dot me-1 text-info"></i> GOOGLE MAPS LOCATION LINK</label>
+                            <input type="url" class="form-control" id="m-cust-maps-link" placeholder="e.g. https://maps.google.com/?q=...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">OPENING BALANCE (₹)</label>
+                            <input type="number" class="form-control" id="m-cust-balance" value="0" step="0.01">
+                            <small class="text-muted fs-7">Positive value = Shop owes BuildPro</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitAddCustomer()">Save Shop</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD CONSTRUCTION CLIENT -->
+    <div class="modal fade" id="newClientModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-bottom border-info">
+                    <h5 class="modal-title fw-bold text-info"><i class="fa-solid fa-user-shield me-2"></i>Add New Construction Client</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-client-form">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-info">CLIENT / PROJECT NAME *</label>
+                            <input type="text" class="form-control border-info" id="m-client-name" placeholder="e.g. Villa Construction Site #4" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">CONTACT PERSON</label>
+                            <input type="text" class="form-control" id="m-client-person">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">PHONE NUMBER</label>
+                            <input type="text" class="form-control" id="m-client-phone">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">SITE ADDRESS / LOCATION</label>
+                            <textarea class="form-control" id="m-client-address" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted"><i class="fa-solid fa-map-location-dot me-1 text-info"></i> GOOGLE MAPS SITE LOCATION LINK</label>
+                            <input type="url" class="form-control" id="m-client-maps-link" placeholder="e.g. https://maps.google.com/?q=...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">OPENING BALANCE (₹)</label>
+                            <input type="number" class="form-control" id="m-client-balance" value="0" step="0.01">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info text-white fw-bold" onclick="submitAddClient()">Save Construction Client</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD PRODUCT -->
+    <div class="modal fade" id="newProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-cube me-2 text-primary"></i>Add New Product</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-product-form">
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">BRAND *</label>
+                                <input type="text" class="form-control" id="m-prod-brand" placeholder="e.g. UltraTech, ACC" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">PRODUCT NAME *</label>
+                                <input type="text" class="form-control" id="m-prod-name" placeholder="e.g. Super Cement" required>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">VARIANT</label>
+                                <input type="text" class="form-control" id="m-prod-variant" placeholder="OPC 53 / PPC">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">SKU / CODE</label>
+                                <input type="text" class="form-control" id="m-prod-sku">
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">MRP PER BAG (₹) *</label>
+                                <input type="number" class="form-control" id="m-prod-mrp" step="0.01" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">GST RATE (%)</label>
+                                <input type="number" class="form-control" id="m-prod-gst" value="18">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitAddProduct()">Save Product</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RECORD PAYMENT -->
+    <div class="modal fade" id="recordPaymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-money-bill-check me-2 text-success"></i>Record Payment</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="pay-invoice-id">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">INVOICE NUMBER</label>
+                        <input type="text" class="form-control" id="pay-inv-number" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">OUTSTANDING BALANCE (₹)</label>
+                        <input type="text" class="form-control text-warning fw-bold" id="pay-outstanding-balance" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">PAYMENT AMOUNT (₹) *</label>
+                        <input type="number" class="form-control" id="pay-amount" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">PAYMENT METHOD</label>
+                        <select class="form-select" id="pay-method">
+                            <option value="cash">Cash</option>
+                            <option value="upi">UPI / Online</option>
+                            <option value="bank">Bank Transfer</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="submitRecordPayment()">Save Payment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: VIEW CUSTOMER LEDGER -->
+    <div class="modal fade" id="customerLedgerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-book me-2 text-warning"></i>Customer Financial Ledger</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="ledger-modal-body">
+                    <!-- Populated dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: VIEW INVOICE DETAIL -->
+    <div class="modal fade" id="viewInvoiceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-invoice me-2 text-primary"></i>Invoice Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="invoice-modal-body">
+                    <!-- Loaded dynamically -->
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Close</button>
+                    <div class="d-flex gap-2" id="invoice-modal-pdf-btns">
+                        <button type="button" class="btn btn-outline-primary" onclick="printInvoicePDF(false)">
+                            <i class="fa-solid fa-file-pdf me-1"></i> Print Standard PDF
+                        </button>
+                        <button type="button" class="btn btn-info text-white" onclick="printInvoicePDF(true)">
+                            <i class="fa-solid fa-stamp me-1"></i> Print Sealed PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CHOOSE PDF TYPE -->
+    <div class="modal fade" id="pdfChoiceModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center p-3">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-light mx-auto">
+                        <i class="fa-solid fa-file-pdf me-2 text-danger"></i>Select PDF Format
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <p class="text-secondary mb-4">Choose which invoice format you would like to open/print:</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <button type="button" class="btn btn-outline-primary btn-lg px-4" onclick="openChosenPdf(false)">
+                            <i class="fa-solid fa-file-lines me-2"></i>Standard PDF
+                        </button>
+                        <button type="button" class="btn btn-info btn-lg text-white px-4" onclick="openChosenPdf(true)">
+                            <i class="fa-solid fa-stamp me-2"></i>Sealed (Stamped) PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD NEW USER / SALES MANAGER -->
+    <div class="modal fade" id="newUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2 text-info"></i>Add New System User / Sales Manager</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-user-form">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">USERNAME *</label>
+                            <input type="text" class="form-control" id="m-user-username" placeholder="e.g. manager_rahul" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">FULL NAME</label>
+                            <input type="text" class="form-control" id="m-user-fullname" placeholder="e.g. Rahul Sharma">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">PASSWORD *</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control border-end-0" id="m-user-password" placeholder="••••••••" required>
+                                <button type="button" class="btn btn-outline-secondary text-secondary border-start-0" onclick="togglePasswordVisibility('m-user-password', this)">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">ROLE *</label>
+                            <select class="form-select" id="m-user-role">
+                                <option value="sales_executive">Sales Manager</option>
+                                <option value="billing">Billing User</option>
+                                <option value="admin">Administrator</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitAddUser()">Create User</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CHANGE PASSWORD (SELF) -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-key me-2 text-warning"></i>Change My Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="change-password-form">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">CURRENT PASSWORD *</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control border-end-0" id="pw-current" required>
+                                <button type="button" class="btn btn-outline-secondary text-secondary border-start-0" onclick="togglePasswordVisibility('pw-current', this)">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">NEW PASSWORD *</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control border-end-0" id="pw-new" required>
+                                <button type="button" class="btn btn-outline-secondary text-secondary border-start-0" onclick="togglePasswordVisibility('pw-new', this)">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">CONFIRM NEW PASSWORD *</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control border-end-0" id="pw-confirm" required>
+                                <button type="button" class="btn btn-outline-secondary text-secondary border-start-0" onclick="togglePasswordVisibility('pw-confirm', this)">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning fw-bold text-dark" onclick="submitChangePassword()">Update Password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RESET USER PASSWORD (ADMIN) -->
+    <div class="modal fade" id="adminResetPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-lock me-2 text-info"></i>Reset User Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="admin-reset-user-id">
+                    <p class="text-light mb-3">Resetting password for user: <strong class="text-warning" id="admin-reset-username"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">NEW PASSWORD *</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control border-end-0" id="admin-reset-new-pw" required>
+                            <button type="button" class="btn btn-outline-secondary text-secondary border-start-0" onclick="togglePasswordVisibility('admin-reset-new-pw', this)">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info fw-bold text-dark" onclick="submitAdminResetPassword()">Reset Password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: INVOICE PREVIEW & CONFIRMATION BEFORE SAVING -->
+    <div class="modal fade" id="invoicePreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content bg-dark text-light border border-secondary shadow-lg">
+                <div class="modal-header border-secondary bg-slate-900">
+                    <h5 class="modal-title fw-bold text-primary">
+                        <i class="fa-solid fa-file-invoice-dollar me-2"></i>Invoice Preview & Review
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" id="invoice-preview-modal-body">
+                    <!-- Populated dynamically -->
+                </div>
+                <div class="modal-footer border-secondary justify-content-between bg-slate-900">
+                    <button type="button" class="btn btn-outline-secondary text-light" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-pen me-1"></i> Continue Editing
+                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-warning text-dark fw-bold" onclick="executeSaveInvoice(true)">
+                            <i class="fa-solid fa-clock-history me-1"></i> Save as Draft
+                        </button>
+                        <button type="button" class="btn btn-success fw-bold" onclick="executeSaveInvoice(false)">
+                            <i class="fa-solid fa-check-double me-1"></i> Confirm & Save Invoice
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: VIEW USER ACTIVITY LOGS -->
+    <div class="modal fade" id="userLogsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-clock-rotate-left me-2 text-info"></i>User Activity & Transaction Logs</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="user-logs-modal-body">
+                    <!-- Populated dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Tom Select JS (Searchable Dropdowns) -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Custom Application Logic JS -->
+    <script src="/static/app.js"></script>
+
+</body>
+</html>

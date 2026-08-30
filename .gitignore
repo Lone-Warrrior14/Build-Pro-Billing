@@ -1,0 +1,38 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Databases & Local Data
+*.db
+*.db-wal
+*.db-shm
+data/
+backups/
+generated_invoices/*.pdf
+
+# PyInstaller Build & Executables
+build/
+dist/
+*.spec.bak
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment variables, credentials & secrets
+.env
+.env.*
+*.secret
+*.pem
+*.key
+*.log
+
+# OS & IDE metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
