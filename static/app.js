@@ -1204,6 +1204,11 @@ function onCustomerSelectChange() {
         document.getElementById('cbox-details').innerText = `Phone: ${customer.phone || 'N/A'} | GSTIN: ${customer.gstin || 'N/A'}`;
         document.getElementById('cbox-balance').innerText = `₹${(customer.current_balance || 0).toFixed(2)}`;
         box.classList.remove('d-none');
+
+        const mapsInput = document.getElementById('bill-maps-link');
+        if (mapsInput && customer.maps_location_link) {
+            mapsInput.value = customer.maps_location_link;
+        }
     }
 }
 
@@ -1877,6 +1882,14 @@ async function populateSqftCustomers() {
 }
 
 function onSqftCustomerSelectChange() {
+    const custId = parseInt(document.getElementById('sqft-customer-select')?.value);
+    if (custId && state.clientsList) {
+        const client = state.clientsList.find(c => c.id === custId);
+        const mapsInput = document.getElementById('sqft-maps-location');
+        if (mapsInput && client && client.maps_location_link) {
+            mapsInput.value = client.maps_location_link;
+        }
+    }
     recalculateSqftBillTotals();
 }
 
