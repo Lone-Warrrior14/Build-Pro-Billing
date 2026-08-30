@@ -43,6 +43,16 @@ class UserRole(str, enum.Enum):
     BILLING = "billing"
     SALES_EXECUTIVE = "sales_executive"
     WORKER = "worker"
+    DEV = "dev"
+
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            val_lower = value.lower()
+            for member in cls:
+                if member.value == val_lower or member.name.lower() == val_lower:
+                    return member
+        return cls.ADMIN
 
 
 class InvoiceStatus(str, enum.Enum):
