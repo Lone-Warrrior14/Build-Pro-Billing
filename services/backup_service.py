@@ -61,7 +61,7 @@ def check_and_trigger_daily_12pm_backup() -> str | None:
         if not os.path.exists(dest_path):
             try:
                 created = create_backup(f"daily_12pm_{today_str}")
-                print(f"✅ Auto Daily Backup: Created post-12 PM snapshot '{dest_filename}'")
+                print(f"[OK] Auto Daily Backup: Created post-12 PM snapshot '{dest_filename}'")
                 return created
             except Exception as e:
                 print(f"Warning: Failed to create daily 12 PM backup: {e}")
