@@ -69,7 +69,7 @@ def create_order_request(
     custom_invoice_number: Optional[str] = None,
     billing_type: str = "standard",
 ) -> Invoice:
-    """Creates a sales order request in PENDING_APPROVAL status."""
+    """Creates a sales order request in ORDER_REQUESTED status."""
     if not lines:
         raise BillingError("An order must have at least one item.")
 
@@ -102,7 +102,7 @@ def create_order_request(
         signatory_designation_snapshot=settings.signatory_designation,
         stamp_path_snapshot=settings.stamp_path if settings.stamp_enabled else None,
         dealer_text_snapshot=settings.dealer_text,
-        status=InvoiceStatus.PENDING_APPROVAL,
+        status=InvoiceStatus.ORDER_REQUESTED,
         notes=notes,
         maps_location_link=(maps_location_link or "").strip() or (customer.maps_location_link if customer and customer.maps_location_link else ""),
         created_by_user_id=user_id,
@@ -189,12 +189,12 @@ def create_order_request(
 
 
 def approve_order_request(db: Session, invoice_id: int, user_id: Optional[int] = None, custom_invoice_number: Optional[str] = None) -> Invoice:
-    """Approves a PENDING_APPROVAL order request."""
+    """Approves a ORDER_REQUESTED order request."""
     invoice = db.get(Invoice, invoice_id)
     if invoice is None:
         raise BillingError("Order request not found.")
-    if invoice.status not in (InvoiceStatus.PENDING_APPROVAL, InvoiceStatus.DRAFT):
-        raise BillingError("Order request is not in PENDING_APPROVAL or DRAFT status.")
+    if invoice.status not in (InvoiceStatus.ORDER_REQUESTED, InvoiceStatus.STOCK_READY):
+        raise BillingError("Order request is not in ORDER_REQUESTED or DRAFT status.")
 
     if custom_invoice_number and custom_invoice_number.strip():
         new_num = custom_invoice_number.strip()

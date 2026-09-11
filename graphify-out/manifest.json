@@ -1,0 +1,308 @@
+{
+  "app_web.py": {
+    "mtime": 1789016932.7092493,
+    "seen": 1789045166.2380614,
+    "ast_hash": "c5225a1df66c776862032f2104ab5c4d",
+    "semantic_hash": "c5225a1df66c776862032f2104ab5c4d"
+  },
+  "client_update_files/static/app.js": {
+    "mtime": 1789042985.022858,
+    "seen": 1789045166.2380614,
+    "ast_hash": "a09f18a4120d89f823b6b57e1608dada",
+    "semantic_hash": "a09f18a4120d89f823b6b57e1608dada"
+  },
+  "create_user.py": {
+    "mtime": 1787837450.3609388,
+    "seen": 1789014338.2960517,
+    "ast_hash": "a56e361a12181a3862f9ea9fa7e30bc8",
+    "semantic_hash": "a56e361a12181a3862f9ea9fa7e30bc8"
+  },
+  "database/__init__.py": {
+    "mtime": 1787809678.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "database/connection.py": {
+    "mtime": 1788022778.902993,
+    "seen": 1789014338.2960517,
+    "ast_hash": "ae56a7615df39d89ea6c308219d5459b",
+    "semantic_hash": "ae56a7615df39d89ea6c308219d5459b"
+  },
+  "database/migrations.py": {
+    "mtime": 1788095496.0630245,
+    "seen": 1789014338.2960517,
+    "ast_hash": "d1791a1fb96807e7aef8df97cc0de944",
+    "semantic_hash": "d1791a1fb96807e7aef8df97cc0de944"
+  },
+  "database/models.py": {
+    "mtime": 1789016301.2221227,
+    "seen": 1789045166.2410753,
+    "ast_hash": "6945aee265a28b8f7a7d3582eb092b83",
+    "semantic_hash": "6945aee265a28b8f7a7d3582eb092b83"
+  },
+  "gui.py": {
+    "mtime": 1788102071.9256916,
+    "seen": 1789014338.2960517,
+    "ast_hash": "5d52e25732f671ed8596bc9d3d891f4a",
+    "semantic_hash": "5d52e25732f671ed8596bc9d3d891f4a"
+  },
+  "invoices/__init__.py": {
+    "mtime": 1787809678.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "invoices/invoice_generator.py": {
+    "mtime": 1788060431.6251063,
+    "seen": 1789014338.2960517,
+    "ast_hash": "eb574ca795297b67adf419fd6d442452",
+    "semantic_hash": "eb574ca795297b67adf419fd6d442452"
+  },
+  "main.py": {
+    "mtime": 1788102062.8786845,
+    "seen": 1789014338.2960517,
+    "ast_hash": "aa29415b27b570f4b1ca8af71d5a2c22",
+    "semantic_hash": "aa29415b27b570f4b1ca8af71d5a2c22"
+  },
+  "reports/__init__.py": {
+    "mtime": 1787809681.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "services/__init__.py": {
+    "mtime": 1787809678.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "services/audit_service.py": {
+    "mtime": 1787809388.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "15d1bd00afb53fb1736079c7dc75ca7d",
+    "semantic_hash": "15d1bd00afb53fb1736079c7dc75ca7d"
+  },
+  "services/backup_service.py": {
+    "mtime": 1788113012.7861624,
+    "seen": 1789014338.2960517,
+    "ast_hash": "fe7f1654d9bf2a5d8e61c330a51cd687",
+    "semantic_hash": "fe7f1654d9bf2a5d8e61c330a51cd687"
+  },
+  "services/billing_service.py": {
+    "mtime": 1789018188.0173156,
+    "seen": 1789045166.2460742,
+    "ast_hash": "cbde2077e8e3e5e2540ba1e521f46cb1",
+    "semantic_hash": "cbde2077e8e3e5e2540ba1e521f46cb1"
+  },
+  "services/customer_service.py": {
+    "mtime": 1787975587.6891108,
+    "seen": 1789014338.2960517,
+    "ast_hash": "45044fa330d863956a083b7cc2c07323",
+    "semantic_hash": "45044fa330d863956a083b7cc2c07323"
+  },
+  "services/invoice_service.py": {
+    "mtime": 1787809295.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "7284d65957b901aac085f7ac1e7da006",
+    "semantic_hash": "7284d65957b901aac085f7ac1e7da006"
+  },
+  "services/pricing_service.py": {
+    "mtime": 1787809283.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "c55df281d2135cd1ad6174cbaada8c2d",
+    "semantic_hash": "c55df281d2135cd1ad6174cbaada8c2d"
+  },
+  "services/product_service.py": {
+    "mtime": 1787809331.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "5812dfec39773aabd341de2459165fb4",
+    "semantic_hash": "5812dfec39773aabd341de2459165fb4"
+  },
+  "services/report_service.py": {
+    "mtime": 1787809637.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "f4f3c1c3d29b38266a45f4bb25787eca",
+    "semantic_hash": "f4f3c1c3d29b38266a45f4bb25787eca"
+  },
+  "services/returns_service.py": {
+    "mtime": 1787809372.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "5ba8fc49a749fe84ef18870107210e94",
+    "semantic_hash": "5ba8fc49a749fe84ef18870107210e94"
+  },
+  "services/stock_service.py": {
+    "mtime": 1787897446.8636205,
+    "seen": 1789014338.2960517,
+    "ast_hash": "e60c0fbf812959646b7eb7012f5e6dcd",
+    "semantic_hash": "e60c0fbf812959646b7eb7012f5e6dcd"
+  },
+  "static/app.js": {
+    "mtime": 1789042985.022858,
+    "seen": 1789045166.2500768,
+    "ast_hash": "a09f18a4120d89f823b6b57e1608dada",
+    "semantic_hash": "a09f18a4120d89f823b6b57e1608dada"
+  },
+  "ui/__init__.py": {
+    "mtime": 1787809678.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "ui/billing.py": {
+    "mtime": 1787809479.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "d0b5be2b1038e2c3a0d8693e0a279c6d",
+    "semantic_hash": "d0b5be2b1038e2c3a0d8693e0a279c6d"
+  },
+  "ui/customers.py": {
+    "mtime": 1787809501.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "e8c0d334b4b5d3e42356cda4dcd8f701",
+    "semantic_hash": "e8c0d334b4b5d3e42356cda4dcd8f701"
+  },
+  "ui/dashboard.py": {
+    "mtime": 1787809625.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "a75707676b48ad7b36bd109a81fb2bf9",
+    "semantic_hash": "a75707676b48ad7b36bd109a81fb2bf9"
+  },
+  "ui/invoices.py": {
+    "mtime": 1787809551.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "b89f27b0bfdc25dfed95c27e993306ac",
+    "semantic_hash": "b89f27b0bfdc25dfed95c27e993306ac"
+  },
+  "ui/login.py": {
+    "mtime": 1787809427.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "366ca40f30fe2a75ec838a098e7b73a1",
+    "semantic_hash": "366ca40f30fe2a75ec838a098e7b73a1"
+  },
+  "ui/main_window.py": {
+    "mtime": 1787809665.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "ba7798a83c650668d0227f7d2600feb6",
+    "semantic_hash": "ba7798a83c650668d0227f7d2600feb6"
+  },
+  "ui/payments.py": {
+    "mtime": 1787809565.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "e8d78dbbb70a3f4e1f5741cfb58ad3fe",
+    "semantic_hash": "e8d78dbbb70a3f4e1f5741cfb58ad3fe"
+  },
+  "ui/products.py": {
+    "mtime": 1787809518.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "8a3ed7a5685757ef9083aa55314e7a19",
+    "semantic_hash": "8a3ed7a5685757ef9083aa55314e7a19"
+  },
+  "ui/reports.py": {
+    "mtime": 1787809654.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "15c5e75046bfa214f3745c0c6fda635d",
+    "semantic_hash": "15c5e75046bfa214f3745c0c6fda635d"
+  },
+  "ui/settings.py": {
+    "mtime": 1787809605.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "aa57db5de1cbe7c81a16f57a0238adac",
+    "semantic_hash": "aa57db5de1cbe7c81a16f57a0238adac"
+  },
+  "ui/stock.py": {
+    "mtime": 1787809536.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "6e8e2fe0019a337a56bd68ac251345e5",
+    "semantic_hash": "6e8e2fe0019a337a56bd68ac251345e5"
+  },
+  "utils/__init__.py": {
+    "mtime": 1787809678.0,
+    "seen": 1789014338.2960517,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "utils/money.py": {
+    "mtime": 1787821376.4606512,
+    "seen": 1789014338.2960517,
+    "ast_hash": "7be497ea175352ee0d5ec9308ccf9742",
+    "semantic_hash": "7be497ea175352ee0d5ec9308ccf9742"
+  },
+  "utils/security.py": {
+    "mtime": 1788016419.530979,
+    "seen": 1789014338.2960517,
+    "ast_hash": "0e3323e441daf94ff551745f26e14c47",
+    "semantic_hash": "0e3323e441daf94ff551745f26e14c47"
+  },
+  "add_delivered_js.py": {
+    "mtime": 1789042401.4866843,
+    "seen": 1789045166.2380614,
+    "ast_hash": "0e36262ba5807b6e14457962fea0dd4c",
+    "semantic_hash": "0e36262ba5807b6e14457962fea0dd4c"
+  },
+  "add_delivered_tab.py": {
+    "mtime": 1789042253.159788,
+    "seen": 1789045166.2380614,
+    "ast_hash": "6ea85488f8927b61f416a0c1d8243285",
+    "semantic_hash": "6ea85488f8927b61f416a0c1d8243285"
+  },
+  "client_update_files/app_web.py": {
+    "mtime": 1789016932.7092493,
+    "seen": 1789045166.2380614,
+    "ast_hash": "c5225a1df66c776862032f2104ab5c4d",
+    "semantic_hash": "c5225a1df66c776862032f2104ab5c4d"
+  },
+  "client_update_files/database/models.py": {
+    "mtime": 1789016301.2221227,
+    "seen": 1789045166.2380614,
+    "ast_hash": "6945aee265a28b8f7a7d3582eb092b83",
+    "semantic_hash": "6945aee265a28b8f7a7d3582eb092b83"
+  },
+  "client_update_files/migrate_requests.py": {
+    "mtime": 1789018647.1257825,
+    "seen": 1789045166.2380614,
+    "ast_hash": "122e142798018c23e46baa2af10a1aee",
+    "semantic_hash": "122e142798018c23e46baa2af10a1aee"
+  },
+  "client_update_files/services/billing_service.py": {
+    "mtime": 1789018188.0173156,
+    "seen": 1789045166.2380614,
+    "ast_hash": "cbde2077e8e3e5e2540ba1e521f46cb1",
+    "semantic_hash": "cbde2077e8e3e5e2540ba1e521f46cb1"
+  },
+  "migrate_requests.py": {
+    "mtime": 1789018647.1257825,
+    "seen": 1789045166.244077,
+    "ast_hash": "122e142798018c23e46baa2af10a1aee",
+    "semantic_hash": "122e142798018c23e46baa2af10a1aee"
+  },
+  "refactor_app_js.py": {
+    "mtime": 1789017104.8378122,
+    "seen": 1789045166.244077,
+    "ast_hash": "1e3f0db6b5a782774277a12491227920",
+    "semantic_hash": "1e3f0db6b5a782774277a12491227920"
+  },
+  "refactor_app_web.py": {
+    "mtime": 1789016808.1949165,
+    "seen": 1789045166.244077,
+    "ast_hash": "8232e5374cf78d9717e0337ad6acd693",
+    "semantic_hash": "8232e5374cf78d9717e0337ad6acd693"
+  },
+  "refactor_billing.py": {
+    "mtime": 1789018152.7404313,
+    "seen": 1789045166.244077,
+    "ast_hash": "18f1ec92beb2188d8f088ed2da8f35d1",
+    "semantic_hash": "18f1ec92beb2188d8f088ed2da8f35d1"
+  },
+  "refactor_index.py": {
+    "mtime": 1789017017.4391668,
+    "seen": 1789045166.244077,
+    "ast_hash": "28b7b1cdd637e8aae8b5df302e78e74b",
+    "semantic_hash": "28b7b1cdd637e8aae8b5df302e78e74b"
+  },
+  "remove_draft.py": {
+    "mtime": 1789016907.6679626,
+    "seen": 1789045166.244077,
+    "ast_hash": "e211f50275811a85bb7e3debb20daf9e",
+    "semantic_hash": "e211f50275811a85bb7e3debb20daf9e"
+  }
+}

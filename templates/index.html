@@ -98,17 +98,19 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-warning fw-semibold" id="nav-new-orders" href="#" onclick="switchTab('new-orders')">
-                            <i class="fa-solid fa-boxes-packing me-1"></i> New Orders
-                            <span id="pending-orders-badge" class="badge bg-danger rounded-pill ms-1 d-none">0</span>
+                        <a class="nav-link text-warning fw-semibold" id="nav-delivery-requests" href="#" onclick="switchTab('delivery-requests')">
+                            <i class="fa-solid fa-truck-ramp-box me-1"></i> Delivery Requests
+                            <span id="delivery-requests-badge" class="badge bg-danger rounded-pill ms-1 d-none">0</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-info fw-semibold" id="nav-draft-orders" href="#" onclick="switchTab('draft-orders')">
-                            <i class="fa-solid fa-file-signature me-1"></i> Draft Orders
-                            <span id="draft-orders-badge" class="badge bg-info text-dark rounded-pill ms-1 d-none">0</span>
+                        <a class="nav-link text-success fw-semibold" id="nav-delivered-orders" href="#" onclick="switchTab('delivered-orders')">
+                            <i class="fa-solid fa-check-double me-1"></i> Delivered Orders
+                            <span id="delivered-orders-badge" class="badge bg-success rounded-pill ms-1 d-none">0</span>
                         </a>
                     </li>
+
+                    
                     <li class="nav-item">
                         <a class="nav-link" id="nav-customers" href="#" onclick="switchTab('customers')">
                             <i class="fa-solid fa-store me-1"></i> Customers / Shops
@@ -291,55 +293,40 @@
             </div>
         </div>
 
-        <!-- NEW ORDERS TAB (Field Order Requests & Combined Inventory Prep) -->
-        <div id="tab-new-orders" class="tab-page d-none">
+        <!-- DELIVERY REQUESTS TAB -->
+        <div id="tab-delivery-requests" class="tab-page d-none">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-boxes-packing text-warning me-2"></i> New Orders & Inventory Preparation</h3>
-                    <p class="text-muted mb-0">Review sales manager order requests, inspect site map locations, and prepare combined stock for upcoming sales</p>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-truck-ramp-box text-warning me-2"></i> Delivery Requests</h3>
+                    <p class="text-muted mb-0">Track order requests from order to stock ready to delivery.</p>
                 </div>
-                <button class="btn btn-outline-light btn-sm" onclick="loadNewOrders()">
-                    <i class="fa-solid fa-rotate me-1"></i> Refresh Orders
+                <button class="btn btn-outline-light btn-sm" onclick="loadDeliveryRequests()">
+                    <i class="fa-solid fa-rotate me-1"></i> Refresh Requests
                 </button>
-            </div>
-
-            <!-- Combined Inventory Preparation Summary Card -->
-            <div class="card card-custom mb-4 border-warning">
-                <div class="card-header bg-transparent border-secondary py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0 text-warning">
-                        <i class="fa-solid fa-warehouse me-2"></i> Total Inventory Required to Fulfill Pending Orders
-                    </h5>
-                    <span class="badge bg-warning text-dark px-3 py-2 fw-bold" id="total-pending-orders-count">0 Pending Orders</span>
-                </div>
-                <div class="card-body">
-                    <div id="combined-stock-container" class="row g-3">
-                        <div class="col-12 text-center text-muted py-3">No pending stock requests.</div>
-                    </div>
-                </div>
             </div>
 
             <!-- Pending Order Requests Table -->
             <div class="card card-custom">
                 <div class="card-header bg-transparent border-secondary py-3">
-                    <h5 class="fw-bold mb-0 text-light"><i class="fa-solid fa-clipboard-list me-2 text-info"></i> Pending Order Requests</h5>
+                    <h5 class="fw-bold mb-0 text-light"><i class="fa-solid fa-clipboard-list me-2 text-info"></i> Delivery Requests List</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-custom mb-0">
                             <thead>
                                 <tr>
-                                    <th>Order #</th>
+                                    <th>Request #</th>
                                     <th>Date</th>
                                     <th>Customer / Shop</th>
                                     <th>Requested Items</th>
-                                    <th>Site Location (Map)</th>
+                                    <th>Status</th>
                                     <th>Total (₹)</th>
                                     <th class="admin-only">Requested By</th>
                                     <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="order-requests-tbody">
-                                <tr><td colspan="7" class="text-center text-muted py-4">Loading pending order requests...</td></tr>
+                            <tbody id="delivery-requests-tbody">
+                                <tr><td colspan="8" class="text-center text-muted py-4">Loading delivery requests...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -347,45 +334,49 @@
             </div>
         </div>
 
-        <!-- DRAFT ORDERS TAB (Approved Draft Requests Ready for Invoice Generation) -->
-        <div id="tab-draft-orders" class="tab-page d-none">
+
+        <!-- DELIVERED ORDERS TAB -->
+        <div id="tab-delivered-orders" class="tab-page d-none">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-file-signature text-info me-2"></i> Draft Orders</h3>
-                    <p class="text-muted mb-0">Approved order requests queued as drafts. Generate official invoices with custom invoice numbers when ready.</p>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-check-double text-success me-2"></i> Delivered Orders</h3>
+                    <p class="text-muted mb-0">Past delivery requests that have been successfully delivered.</p>
                 </div>
-                <button class="btn btn-outline-light btn-sm" onclick="loadDraftOrders()">
-                    <i class="fa-solid fa-rotate me-1"></i> Refresh Drafts
+                <button class="btn btn-outline-light btn-sm" onclick="loadDeliveryRequests()">
+                    <i class="fa-solid fa-rotate me-1"></i> Refresh Requests
                 </button>
             </div>
 
             <div class="card card-custom">
                 <div class="card-header bg-transparent border-secondary py-3">
-                    <h5 class="fw-bold mb-0 text-light"><i class="fa-solid fa-file-invoice me-2 text-warning"></i> Approved Draft Orders</h5>
+                    <h5 class="fw-bold mb-0 text-light"><i class="fa-solid fa-clipboard-check me-2 text-success"></i> Delivered Orders History</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-custom mb-0">
                             <thead>
                                 <tr>
-                                    <th>Draft #</th>
+                                    <th>Request #</th>
                                     <th>Date</th>
                                     <th>Customer / Shop</th>
-                                    <th>Products Ordered</th>
-                                    <th>SITE LOCATION (MAP)</th>
+                                    <th>Requested Items</th>
+                                    <th>Status</th>
                                     <th>Total (₹)</th>
-                                    <th>Approved / Created By</th>
-                                    <th class="text-center">Actions</th>
+                                    <th class="admin-only">Requested By</th>
                                 </tr>
                             </thead>
-                            <tbody id="draft-orders-tbody">
-                                <tr><td colspan="8" class="text-center text-muted py-4">Loading draft orders...</td></tr>
+                            <tbody id="delivered-orders-tbody">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Loading delivered orders...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
+
+
+
+        
 
         <!-- NEW BILL TAB -->
         <div id="tab-new-bill" class="tab-page d-none">
@@ -413,7 +404,7 @@
                                 <label class="form-label text-muted small fw-bold"><i class="fa-solid fa-hashtag me-1 text-danger"></i> INVOICE BOOK NUMBER <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control fw-bold text-warning" id="bill-invoice-number" placeholder="Enter Invoice Book No. (Required)" required>
                             </div>
-                            <div class="col-md-3 d-flex align-items-end">
+                            <div class="col-md-3 d-flex align-items-end mt-2 mt-md-0">
                                 <button class="btn btn-outline-light w-100" onclick="openAddPartyModal('shop')">
                                     <i class="fa-solid fa-user-plus me-1"></i> Add New Shop
                                 </button>
@@ -542,6 +533,46 @@
             </div>
         </div>
 
+
+        <!-- DELIVERED ORDERS TAB -->
+        <div id="tab-delivered-orders" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-check-double text-success me-2"></i> Delivered Orders</h3>
+                    <p class="text-muted mb-0">Past delivery requests that have been successfully delivered.</p>
+                </div>
+                <button class="btn btn-outline-light btn-sm" onclick="loadDeliveryRequests()">
+                    <i class="fa-solid fa-rotate me-1"></i> Refresh Requests
+                </button>
+            </div>
+
+            <div class="card card-custom">
+                <div class="card-header bg-transparent border-secondary py-3">
+                    <h5 class="fw-bold mb-0 text-light"><i class="fa-solid fa-clipboard-check me-2 text-success"></i> Delivered Orders History</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Request #</th>
+                                    <th>Date</th>
+                                    <th>Customer / Shop</th>
+                                    <th>Requested Items</th>
+                                    <th>Status</th>
+                                    <th>Total (₹)</th>
+                                    <th class="admin-only">Requested By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="delivered-orders-tbody">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Loading delivered orders...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- CONSTRUCTION SQFT BILLING TAB -->
         <div id="tab-construction-bill" class="tab-page d-none">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -568,7 +599,7 @@
                                 <label class="form-label text-muted small fw-bold"><i class="fa-solid fa-hashtag me-1 text-danger"></i> INVOICE BOOK NUMBER <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control fw-bold text-warning" id="sqft-invoice-number" placeholder="Enter Invoice Book No. (Required)" required>
                             </div>
-                            <div class="col-md-3 d-flex align-items-end">
+                            <div class="col-md-3 d-flex align-items-end mt-2 mt-md-0">
                                 <button class="btn btn-outline-info w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#newClientModal">
                                     <i class="fa-solid fa-user-plus me-1"></i> Add Client
                                 </button>
@@ -682,6 +713,46 @@
                         <button class="btn btn-info w-100 py-3 fw-bold fs-6 text-white shadow-lg" id="sqft-submit-bill-btn" onclick="submitSqftInvoice()">
                             <i class="fa-solid fa-check-circle me-2"></i> Issue SqFt Construction Bill
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- DELIVERED ORDERS TAB -->
+        <div id="tab-delivered-orders" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-check-double text-success me-2"></i> Delivered Orders</h3>
+                    <p class="text-muted mb-0">Past delivery requests that have been successfully delivered.</p>
+                </div>
+                <button class="btn btn-outline-light btn-sm" onclick="loadDeliveryRequests()">
+                    <i class="fa-solid fa-rotate me-1"></i> Refresh Requests
+                </button>
+            </div>
+
+            <div class="card card-custom">
+                <div class="card-header bg-transparent border-secondary py-3">
+                    <h5 class="fw-bold mb-0 text-light"><i class="fa-solid fa-clipboard-check me-2 text-success"></i> Delivered Orders History</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Request #</th>
+                                    <th>Date</th>
+                                    <th>Customer / Shop</th>
+                                    <th>Requested Items</th>
+                                    <th>Status</th>
+                                    <th>Total (₹)</th>
+                                    <th class="admin-only">Requested By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="delivered-orders-tbody">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Loading delivered orders...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1251,6 +1322,46 @@
                 </div>
             </div>
         </div>
+
+
+        <!-- DELIVERED ORDERS TAB -->
+        <div id="tab-delivered-orders" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-check-double text-success me-2"></i> Delivered Orders</h3>
+                    <p class="text-muted mb-0">Past delivery requests that have been successfully delivered.</p>
+                </div>
+                <button class="btn btn-outline-light btn-sm" onclick="loadDeliveryRequests()">
+                    <i class="fa-solid fa-rotate me-1"></i> Refresh Requests
+                </button>
+            </div>
+
+            <div class="card card-custom">
+                <div class="card-header bg-transparent border-secondary py-3">
+                    <h5 class="fw-bold mb-0 text-light"><i class="fa-solid fa-clipboard-check me-2 text-success"></i> Delivered Orders History</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Request #</th>
+                                    <th>Date</th>
+                                    <th>Customer / Shop</th>
+                                    <th>Requested Items</th>
+                                    <th>Status</th>
+                                    <th>Total (₹)</th>
+                                    <th class="admin-only">Requested By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="delivered-orders-tbody">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Loading delivered orders...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL: CHOOSE PDF TYPE -->
@@ -1272,6 +1383,46 @@
                         <button type="button" class="btn btn-info btn-lg text-white px-4" onclick="openChosenPdf(true)">
                             <i class="fa-solid fa-stamp me-2"></i>Sealed (Stamped) PDF
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- DELIVERED ORDERS TAB -->
+        <div id="tab-delivered-orders" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-check-double text-success me-2"></i> Delivered Orders</h3>
+                    <p class="text-muted mb-0">Past delivery requests that have been successfully delivered.</p>
+                </div>
+                <button class="btn btn-outline-light btn-sm" onclick="loadDeliveryRequests()">
+                    <i class="fa-solid fa-rotate me-1"></i> Refresh Requests
+                </button>
+            </div>
+
+            <div class="card card-custom">
+                <div class="card-header bg-transparent border-secondary py-3">
+                    <h5 class="fw-bold mb-0 text-light"><i class="fa-solid fa-clipboard-check me-2 text-success"></i> Delivered Orders History</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Request #</th>
+                                    <th>Date</th>
+                                    <th>Customer / Shop</th>
+                                    <th>Requested Items</th>
+                                    <th>Status</th>
+                                    <th>Total (₹)</th>
+                                    <th class="admin-only">Requested By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="delivered-orders-tbody">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Loading delivered orders...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1423,6 +1574,46 @@
                         <button type="button" class="btn btn-success fw-bold" onclick="executeSaveInvoice(false)">
                             <i class="fa-solid fa-check-double me-1"></i> Confirm & Save Invoice
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- DELIVERED ORDERS TAB -->
+        <div id="tab-delivered-orders" class="tab-page d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="fa-solid fa-check-double text-success me-2"></i> Delivered Orders</h3>
+                    <p class="text-muted mb-0">Past delivery requests that have been successfully delivered.</p>
+                </div>
+                <button class="btn btn-outline-light btn-sm" onclick="loadDeliveryRequests()">
+                    <i class="fa-solid fa-rotate me-1"></i> Refresh Requests
+                </button>
+            </div>
+
+            <div class="card card-custom">
+                <div class="card-header bg-transparent border-secondary py-3">
+                    <h5 class="fw-bold mb-0 text-light"><i class="fa-solid fa-clipboard-check me-2 text-success"></i> Delivered Orders History</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Request #</th>
+                                    <th>Date</th>
+                                    <th>Customer / Shop</th>
+                                    <th>Requested Items</th>
+                                    <th>Status</th>
+                                    <th>Total (₹)</th>
+                                    <th class="admin-only">Requested By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="delivered-orders-tbody">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Loading delivered orders...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

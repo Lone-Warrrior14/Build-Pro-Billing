@@ -1,0 +1,11 @@
+D:\downloads\buildpro-billing-software\buildpro\README.md
+D:\downloads\buildpro-billing-software\buildpro\client_update_files\templates\index.html
+D:\downloads\buildpro-billing-software\buildpro\requirements.md
+D:\downloads\buildpro-billing-software\buildpro\requirements.txt
+D:\downloads\buildpro-billing-software\buildpro\templates\index.html
+D:\downloads\buildpro-billing-software\buildpro\bill logo.png
+D:\downloads\buildpro-billing-software\buildpro\build pro icon.png
+D:\downloads\buildpro-billing-software\buildpro\seal.png
+D:\downloads\buildpro-billing-software\buildpro\sign.png
+D:\downloads\buildpro-billing-software\buildpro\static\bill logo.png
+D:\downloads\buildpro-billing-software\buildpro\static\seal.png

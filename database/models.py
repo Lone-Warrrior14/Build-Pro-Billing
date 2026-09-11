@@ -56,8 +56,9 @@ class UserRole(str, enum.Enum):
 
 
 class InvoiceStatus(str, enum.Enum):
-    DRAFT = "draft"
-    PENDING_APPROVAL = "pending_approval"
+    ORDER_REQUESTED = "order_requested"
+    STOCK_READY = "stock_ready"
+    DELIVERED = "delivered"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
     DELETED = "deleted"

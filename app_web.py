@@ -139,7 +139,7 @@ def get_dashboard_stats():
 
         recent_invs = (
             session.query(Invoice)
-            .filter(Invoice.status.notin_([InvoiceStatus.PENDING_APPROVAL, InvoiceStatus.DELETED]))
+            .filter(Invoice.status.notin_([InvoiceStatus.ORDER_REQUESTED, InvoiceStatus.STOCK_READY, InvoiceStatus.DELIVERED, InvoiceStatus.DELETED]))
             .order_by(Invoice.invoice_date.desc())
             .limit(5)
             .all()
@@ -507,7 +507,7 @@ def manage_invoices():
     with session_scope() as session:
         if request.method == "GET":
             include_deleted = request.args.get("include_deleted", "false").lower() == "true"
-            query = session.query(Invoice).filter(Invoice.status != InvoiceStatus.PENDING_APPROVAL)
+            query = session.query(Invoice).filter(Invoice.status.notin_([InvoiceStatus.ORDER_REQUESTED, InvoiceStatus.STOCK_READY, InvoiceStatus.DELIVERED]))
             if not include_deleted:
                 query = query.filter(Invoice.status != InvoiceStatus.DELETED)
             invoices = query.order_by(Invoice.invoice_date.desc()).all()
@@ -671,10 +671,10 @@ def update_invoice_route(invoice_id: int):
             return jsonify({"success": False, "error": str(e)}), 400
 
 
-@app.route("/api/order-requests", methods=["GET"])
+@app.route("/api/delivery-requests", methods=["GET"])
 def get_order_requests():
     with session_scope() as session:
-        invoices = session.query(Invoice).filter(Invoice.status == InvoiceStatus.PENDING_APPROVAL).order_by(Invoice.invoice_date.desc()).all()
+        invoices = session.query(Invoice).filter(Invoice.status.in_([InvoiceStatus.ORDER_REQUESTED, InvoiceStatus.STOCK_READY, InvoiceStatus.DELIVERED])).order_by(Invoice.invoice_date.desc()).all()
         orders_res = []
         product_summary_map = {}
 
@@ -723,17 +723,6 @@ def get_order_requests():
         })
 
 
-@app.route("/api/invoices/<int:invoice_id>/approve", methods=["POST"])
-def approve_order(invoice_id: int):
-    data = request.get_json(silent=True) or {}
-    custom_inv_num = data.get("invoice_number", "").strip() or None
-    user_id = flask_session.get("user_id")
-    with session_scope() as session:
-        try:
-            inv = billing_service.approve_order_request(session, invoice_id, user_id=user_id, custom_invoice_number=custom_inv_num)
-            return jsonify({"success": True, "invoice_id": inv.id, "message": f"Order {inv.invoice_number} approved and converted to Invoice!"})
-        except Exception as e:
-            return jsonify({"success": False, "error": str(e)}), 400
 
 
 @app.route("/api/invoices/<int:invoice_id>/reject", methods=["POST"])
@@ -766,9 +755,9 @@ def manage_users():
                 
                 # User activity stats
                 invoices = session.query(Invoice).filter(Invoice.created_by_user_id == u.id, Invoice.status != InvoiceStatus.DELETED).all()
-                total_invoices_count = len([i for i in invoices if i.status != InvoiceStatus.PENDING_APPROVAL])
-                orders_requested_count = len([i for i in invoices if i.status == InvoiceStatus.PENDING_APPROVAL])
-                total_sales_paise = sum(i.grand_total_paise for i in invoices if i.status != InvoiceStatus.PENDING_APPROVAL)
+                total_invoices_count = len([i for i in invoices if i.status != InvoiceStatus.ORDER_REQUESTED])
+                orders_requested_count = len([i for i in invoices if i.status == InvoiceStatus.ORDER_REQUESTED])
+                total_sales_paise = sum(i.grand_total_paise for i in invoices if i.status != InvoiceStatus.ORDER_REQUESTED)
 
                 res.append({
                     "id": u.id,
@@ -827,7 +816,7 @@ def get_user_logs(user_id: int):
         total_collected_paise = 0
 
         for inv in invoices:
-            is_order = inv.status == InvoiceStatus.PENDING_APPROVAL
+            is_order = inv.status == InvoiceStatus.ORDER_REQUESTED
             if not is_order and inv.status != InvoiceStatus.DELETED:
                 total_sales_paise += inv.grand_total_paise
                 total_collected_paise += inv.amount_paid_paise
@@ -981,71 +970,8 @@ def delete_invoice(invoice_id: int):
             return jsonify({"success": False, "error": str(e)}), 400
 
 
-@app.route("/api/draft-orders", methods=["GET"])
-def get_draft_orders():
-    from database.models import User
-    with session_scope() as session:
-        drafts = session.query(Invoice).filter(Invoice.status == InvoiceStatus.DRAFT).order_by(Invoice.id.desc()).all()
-        res = []
-        for inv in drafts:
-            creator = inv.created_by_user.username if inv.created_by_user else "System/Admin"
-            items_list = []
-            for item in inv.items:
-                items_list.append({
-                    "brand": item.brand_snapshot or "",
-                    "product_name": item.product_name_snapshot or "Product",
-                    "quantity": float(item.quantity_bags or 0),
-                    "unit": item.unit_snapshot or "Bags",
-                    "selling_price": item.selling_price_paise / 100.0 if item.selling_price_paise else 0.0,
-                    "line_total": item.line_total_paise / 100.0 if item.line_total_paise else 0.0
-                })
-            res.append({
-                "id": inv.id,
-                "invoice_number": inv.invoice_number,
-                "customer_name": inv.customer_name_snapshot,
-                "customer_id": inv.customer_id,
-                "invoice_date": inv.invoice_date.isoformat() if inv.invoice_date else "",
-                "created_at": inv.created_at.isoformat() if inv.created_at else "",
-                "items_count": len(inv.items),
-                "items": items_list,
-                "grand_total": inv.grand_total,
-                "maps_location_link": getattr(inv, "maps_location_link", "") or "",
-                "created_by": creator,
-                "status": inv.status.value
-            })
-        return jsonify({"success": True, "draft_orders": res})
 
 
-@app.route("/api/invoices/<int:invoice_id>/approve-to-draft", methods=["POST"])
-def approve_to_draft(invoice_id: int):
-    with session_scope() as session:
-        inv = session.get(Invoice, invoice_id)
-        if not inv:
-            return jsonify({"success": False, "error": "Order request not found"}), 404
-        if inv.status != InvoiceStatus.PENDING_APPROVAL:
-            return jsonify({"success": False, "error": "Order is not in pending approval status"}), 400
-        inv.status = InvoiceStatus.DRAFT
-        return jsonify({
-            "success": True,
-            "message": f"Order Request #{inv.invoice_number} approved and moved to Draft Orders!"
-        })
-
-
-@app.route("/api/invoices/<int:invoice_id>/approve", methods=["POST"])
-def approve_order_request(invoice_id: int):
-    data = request.get_json(silent=True) or {}
-    custom_inv_num = data.get("invoice_number", "").strip() or None
-    user_id = flask_session.get("user_id")
-    with session_scope() as session:
-        try:
-            inv = billing_service.approve_order_request(session, invoice_id, user_id=user_id, custom_invoice_number=custom_inv_num)
-            return jsonify({
-                "success": True,
-                "invoice_id": inv.id,
-                "message": f"Order {inv.invoice_number} approved and invoice finalized!"
-            })
-        except Exception as e:
-            return jsonify({"success": False, "error": str(e)}), 400
 
 
 @app.route("/api/invoices/<int:invoice_id>", methods=["GET"])
@@ -1135,7 +1061,7 @@ def download_invoice_pdf(invoice_id: int):
         inv = session.get(Invoice, invoice_id)
         if not inv:
             return jsonify({"error": "Invoice not found"}), 404
-        if inv.status == InvoiceStatus.PENDING_APPROVAL:
+        if inv.status == InvoiceStatus.ORDER_REQUESTED:
             return jsonify({"error": "Order requests cannot generate invoice bills until approved by billing/admin."}), 400
         
         from database.connection import get_app_dir
@@ -1176,3 +1102,31 @@ if __name__ == "__main__":
     print("========================================================\n")
 
     app.run(host="0.0.0.0", port=args.port, debug=True)
+
+@app.route("/api/delivery-requests/<int:invoice_id>/update-status", methods=["POST"])
+def update_delivery_status(invoice_id: int):
+    from flask import request, jsonify, session as flask_session
+    from database.connection import session_scope
+    from database.models import Invoice, InvoiceStatus
+    data = request.get_json(silent=True) or {}
+    new_status_str = data.get("status")
+    
+    valid_statuses = {
+        "order_requested": InvoiceStatus.ORDER_REQUESTED,
+        "stock_ready": InvoiceStatus.STOCK_READY,
+        "delivered": InvoiceStatus.DELIVERED
+    }
+    
+    if new_status_str not in valid_statuses:
+        return jsonify({"success": False, "error": "Invalid status"}), 400
+        
+    with session_scope() as session:
+        try:
+            inv = session.get(Invoice, invoice_id)
+            if not inv:
+                return jsonify({"success": False, "error": "Delivery request not found"}), 404
+            
+            inv.status = valid_statuses[new_status_str]
+            return jsonify({"success": True, "message": f"Delivery request {inv.invoice_number} updated to {new_status_str}!"})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 400

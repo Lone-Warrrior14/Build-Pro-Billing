@@ -13,13 +13,19 @@ function openLoginOverlay() {
     const alertBox = document.getElementById('login-alert');
     if (alertBox) alertBox.classList.add('d-none');
     if (overlay) overlay.classList.remove('d-none');
+    document.body.classList.add('login-overlay-active');
+}
+
+function closeLoginOverlay() {
+    const overlay = document.getElementById('login-overlay');
+    if (overlay) overlay.classList.add('d-none');
+    document.body.classList.remove('login-overlay-active');
 }
 
 async function checkSession() {
     try {
         const res = await fetch('/api/me');
         const data = await res.json();
-        const overlay = document.getElementById('login-overlay');
         const loginBtn = document.getElementById('header-login-btn');
         const logoutBtn = document.getElementById('header-logout-btn');
         const pwBtn = document.getElementById('header-pw-btn');
@@ -27,19 +33,20 @@ async function checkSession() {
         if (data.authenticated && data.user) {
             state.currentUser = data.user;
             switchRole(data.user.role);
-            if (overlay) overlay.classList.add('d-none');
+            closeLoginOverlay();
             if (loginBtn) loginBtn.classList.add('d-none');
             if (logoutBtn) logoutBtn.classList.remove('d-none');
             if (pwBtn) pwBtn.classList.remove('d-none');
             loadAllData();
         } else {
-            if (overlay) overlay.classList.remove('d-none');
+            openLoginOverlay();
             if (loginBtn) loginBtn.classList.remove('d-none');
             if (logoutBtn) logoutBtn.classList.add('d-none');
             if (pwBtn) pwBtn.classList.add('d-none');
         }
     } catch (e) {
         console.error("Session check failed", e);
+        openLoginOverlay();
     }
 }
 
@@ -47,8 +54,8 @@ async function loadAllData() {
     try {
         if (typeof loadDashboardData === 'function') await loadDashboardData();
         if (typeof loadInvoices === 'function') await loadInvoices();
-        if (typeof loadNewOrders === 'function') await loadNewOrders();
-        if (typeof loadDraftOrders === 'function') await loadDraftOrders();
+        if (typeof loadNewOrders === 'function') await loadDeliveryRequests();
+        if (typeof loadDraftOrders === 'function') await loadDeliveryRequests();
         if (typeof loadCustomers === 'function') await loadCustomers();
         if (typeof loadClients === 'function') await loadClients();
         if (typeof loadProducts === 'function') await loadProducts();
@@ -81,12 +88,11 @@ async function handleLoginSubmit(e) {
 
         if (data.success) {
             state.currentUser = data.user;
-            const overlay = document.getElementById('login-overlay');
             const loginBtn = document.getElementById('header-login-btn');
             const logoutBtn = document.getElementById('header-logout-btn');
             const pwBtn = document.getElementById('header-pw-btn');
 
-            if (overlay) overlay.classList.add('d-none');
+            closeLoginOverlay();
             if (loginBtn) loginBtn.classList.add('d-none');
             if (logoutBtn) logoutBtn.classList.remove('d-none');
             if (pwBtn) pwBtn.classList.remove('d-none');
@@ -139,8 +145,7 @@ async function logout() {
     if (logoutBtn) logoutBtn.classList.add('d-none');
     const pwBtn = document.getElementById('header-pw-btn');
     if (pwBtn) pwBtn.classList.add('d-none');
-    const overlay = document.getElementById('login-overlay');
-    if (overlay) overlay.classList.remove('d-none');
+    openLoginOverlay();
     window.location.reload();
 }
 
@@ -269,6 +274,17 @@ function switchTab(tabId) {
         return;
     }
 
+    // Auto-collapse mobile navbar on mobile view after selecting a menu item
+    const navbarCollapse = document.getElementById('navbarNav');
+    if (navbarCollapse && navbarCollapse.classList.contains('show') && typeof bootstrap !== 'undefined') {
+        try {
+            const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse) || new bootstrap.Collapse(navbarCollapse);
+            bsCollapse.hide();
+        } catch (e) {
+            navbarCollapse.classList.remove('show');
+        }
+    }
+
     document.querySelectorAll('.tab-page').forEach(el => el.classList.add('d-none'));
     document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
 
@@ -284,8 +300,8 @@ function switchTab(tabId) {
 
     if (tabId === 'dashboard') loadDashboardData();
     if (tabId === 'invoices') loadInvoices();
-    if (tabId === 'new-orders') loadNewOrders();
-    if (tabId === 'draft-orders') loadDraftOrders();
+    if (tabId === 'delivery-requests') loadDeliveryRequests();
+    if (tabId === 'invalid-tab') loadDeliveryRequests();
     if (tabId === 'customers') loadCustomers();
     if (tabId === 'clients') loadClients();
     if (tabId === 'products') loadProducts();
@@ -2599,439 +2615,134 @@ async function deleteUser(userId, username) {
     }
 }
 
-async function loadNewOrders() {
+async function loadDeliveryRequests() {
+      try {
+          const res = await fetch('/api/delivery-requests');
+          const data = await res.json();
+          
+          if (data.success) {
+              const tbody = document.getElementById('delivery-requests-tbody');
+              const badge = document.getElementById('delivery-requests-badge');
+              const deliveredTbody = document.getElementById('delivered-orders-tbody');
+              const deliveredBadge = document.getElementById('delivered-orders-badge');
+              
+              let activeOrders = [];
+              let deliveredOrders = [];
+              
+              data.orders.forEach(ord => {
+                  if (ord.status === 'delivered') {
+                      deliveredOrders.push(ord);
+                  } else {
+                      activeOrders.push(ord);
+                  }
+              });
+
+              if (badge) {
+                  if (activeOrders.length > 0) {
+                      badge.innerText = activeOrders.length;
+                      badge.classList.remove('d-none');
+                  } else {
+                      badge.classList.add('d-none');
+                  }
+              }
+              
+              if (deliveredBadge) {
+                  if (deliveredOrders.length > 0) {
+                      deliveredBadge.innerText = deliveredOrders.length;
+                      deliveredBadge.classList.remove('d-none');
+                  } else {
+                      deliveredBadge.classList.add('d-none');
+                  }
+              }
+              
+              const appendRow = (targetTbody, ord) => {
+                  const tr = document.createElement('tr');
+                  const dateObj = new Date(ord.invoice_date);
+                  const isReady = ord.status === 'stock_ready';
+                  const isDelivered = ord.status === 'delivered';
+                  const isRequested = ord.status === 'order_requested';
+                  
+                  let statusBadge = `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Requested</span>`;
+                  if (isReady) statusBadge = `<span class="badge bg-info text-dark"><i class="fa-solid fa-box me-1"></i> Stock Ready</span>`;
+                  if (isDelivered) statusBadge = `<span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Delivered</span>`;
+  
+                  tr.innerHTML = `
+                      <td class="fw-bold">#${ord.invoice_number}</td>
+                      <td>
+                          <div class="fw-medium">${dateObj.toLocaleDateString('en-GB')}</div>
+                          <small class="text-muted">${dateObj.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})}</small>
+                      </td>
+                      <td>
+                          <div class="fw-bold text-info">${ord.customer_name}</div>
+                          ${ord.customer_phone ? `<small class="text-muted"><i class="fa-solid fa-phone me-1"></i>${ord.customer_phone}</small>` : ''}
+                      </td>
+                      <td>
+                          <ul class="list-unstyled mb-0 small">
+                              ${ord.items.map(i => `<li><i class="fa-solid fa-caret-right text-secondary me-1"></i><span class="fw-semibold">${i.quantity} ${i.unit}</span> ${i.brand} ${i.product_name}</li>`).join('')}
+                          </ul>
+                      </td>
+                      <td>${statusBadge}</td>
+                      <td class="fw-bold text-success">₹${ord.grand_total.toFixed(2)}</td>
+                      <td class="admin-only text-muted small">${ord.created_by}</td>
+                      ${!isDelivered ? `
+                      <td class="text-center">
+                          <div class="btn-group">
+                              ${isRequested ? `<button class="btn btn-sm btn-outline-info" onclick="updateDeliveryStatus(${ord.id}, 'stock_ready')" title="Mark Stock Ready"><i class="fa-solid fa-box"></i> Stock Ready</button>` : ''}
+                              ${isReady ? `<button class="btn btn-sm btn-outline-success" onclick="updateDeliveryStatus(${ord.id}, 'delivered')" title="Mark Delivered"><i class="fa-solid fa-truck"></i> Deliver</button>` : ''}
+                              <button class="btn btn-sm btn-outline-danger" onclick="rejectOrder(${ord.id})" title="Cancel Request"><i class="fa-solid fa-xmark"></i></button>
+                          </div>
+                      </td>` : ''}
+                  `;
+                  targetTbody.appendChild(tr);
+              };
+
+              if (activeOrders.length === 0) {
+                  tbody.innerHTML = '<tr><td colspan="8" class="text-center text-secondary py-4 fw-medium">No active delivery requests found.</td></tr>';
+              } else {
+                  tbody.innerHTML = '';
+                  activeOrders.forEach(ord => appendRow(tbody, ord));
+              }
+              
+              if (deliveredTbody) {
+                  if (deliveredOrders.length === 0) {
+                      deliveredTbody.innerHTML = '<tr><td colspan="7" class="text-center text-secondary py-4 fw-medium">No delivered orders found.</td></tr>';
+                  } else {
+                      deliveredTbody.innerHTML = '';
+                      deliveredOrders.forEach(ord => appendRow(deliveredTbody, ord));
+                  }
+              }
+              
+              updateAdminVisibility();
+          }
+      } catch (e) {
+          console.error("Error loading delivery requests:", e);
+      }
+  }
+
+async function updateDeliveryStatus(invId, newStatus) {
+    if (!confirm(`Are you sure you want to mark this request as ${newStatus}?`)) return;
     try {
-        const res = await fetch('/api/order-requests');
-        const data = await res.json();
-        if (!data.success) return;
-
-        const badge = document.getElementById('pending-orders-badge');
-        const totalCountSpan = document.getElementById('total-pending-orders-count');
-        const ordersCount = data.orders.length;
-
-        if (badge) {
-            badge.innerText = ordersCount;
-            if (ordersCount > 0) badge.classList.remove('d-none');
-            else badge.classList.add('d-none');
-        }
-        if (totalCountSpan) {
-            totalCountSpan.innerText = `${ordersCount} Pending Order${ordersCount === 1 ? '' : 's'}`;
-        }
-
-        // Render Combined Inventory Summary
-        const stockContainer = document.getElementById('combined-stock-container');
-        if (stockContainer) {
-            stockContainer.innerHTML = '';
-            if (data.inventory_summary.length === 0) {
-                stockContainer.innerHTML = '<div class="col-12 text-center text-secondary py-3 fw-medium"><i class="fa-solid fa-circle-check text-success me-2"></i>No pending orders. All inventory is clear.</div>';
-            } else {
-                data.inventory_summary.forEach(item => {
-                    const col = document.createElement('div');
-                    col.className = 'col-md-4 col-sm-6';
-                    col.innerHTML = `
-                        <div class="p-3 rounded border border-secondary bg-dark h-100 shadow-sm d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="badge bg-secondary mb-1">${item.brand}</span>
-                                <h6 class="fw-bold text-light mb-0">${item.product_name}</h6>
-                            </div>
-                            <div class="text-end">
-                                <span class="fs-4 fw-bold text-warning">${item.total_quantity}</span>
-                                <small class="text-muted ms-1">${item.unit}</small>
-                            </div>
-                        </div>
-                    `;
-                    stockContainer.appendChild(col);
-                });
-            }
-        }
-
-        // Render Orders Table
-        const tbody = document.getElementById('order-requests-tbody');
-        if (tbody) {
-            tbody.innerHTML = '';
-            if (data.orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-secondary py-4 fw-medium">No pending order requests found.</td></tr>';
-                return;
-            }
-
-            data.orders.forEach(ord => {
-                const tr = document.createElement('tr');
-                const itemsSummary = ord.items.map(i => `${i.brand} ${i.product_name} (${i.quantity} ${i.unit})`).join(', ');
-
-                tr.innerHTML = `
-                    <td class="fw-bold text-warning"><i class="fa-solid fa-paper-plane me-1"></i>Order Request #${ord.id}</td>
-                    <td class="text-secondary small">${ord.invoice_date.split('T')[0]}</td>
-                    <td class="fw-semibold text-light">${ord.customer_name}</td>
-                    <td class="small text-light-50" style="max-width: 250px;">${itemsSummary}</td>
-                    <td>
-                        ${ord.maps_location_link ? `
-                            <a href="${ord.maps_location_link}" target="_blank" class="btn btn-xs btn-outline-info text-decoration-none">
-                                <i class="fa-solid fa-map-location-dot me-1"></i> View Site Map
-                            </a>
-                        ` : '<span class="text-muted small">No Location</span>'}
-                    </td>
-                    <td class="fw-bold text-success">₹${ord.grand_total.toFixed(2)}</td>
-                    <td class="admin-only ${state.currentRole === 'admin' ? '' : 'd-none'}"><span class="badge bg-warning-subtle text-warning border border-warning px-2 py-1"><i class="fa-solid fa-user-tag me-1"></i>${ord.created_by || 'Sales Manager'}</span></td>
-                    <td class="text-center">
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-info" onclick="viewInvoiceDetail(${ord.id})" title="View Details">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
-                            ${state.currentRole !== 'billing' ? `
-                                <button class="btn btn-outline-warning" onclick="editInvoice(${ord.id})" title="Edit Order Request">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </button>
-                            ` : ''}
-                            ${state.currentRole === 'admin' || state.currentRole === 'billing' ? `
-                                <button class="btn btn-success" onclick="approveOrderToDraft(${ord.id})" title="Approve & Move to Draft Orders">
-                                    <i class="fa-solid fa-check me-1"></i> Approve
-                                </button>
-                                <button class="btn btn-outline-danger" onclick="rejectOrder(${ord.id})" title="Reject Order">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
-                            ` : '<span class="badge bg-warning text-dark align-self-center ms-2">Pending Approval</span>'}
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    } catch (e) {
-        console.error("Error loading order requests:", e);
-    }
-}
-
-async function approveOrderToDraft(invId) {
-    try {
-        const res = await fetch(`/api/invoices/${invId}/approve-to-draft`, {
+        const res = await fetch(`/api/delivery-requests/${invId}/update-status`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'}
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({status: newStatus})
         });
         const data = await res.json();
         if (data.success) {
-            alert(data.message);
-            await loadNewOrders();
-            await loadDraftOrders();
-            await loadAllData();
-            switchTab('draft-orders');
+            await loadDeliveryRequests();
         } else {
-            alert(data.error);
+            alert(data.error || "Failed to update status.");
         }
     } catch (e) {
-        alert("Failed to approve order request to draft.");
+        console.error(e);
+        alert("Error updating status.");
     }
 }
 
-async function loadDraftOrders() {
-    try {
-        const res = await fetch('/api/draft-orders');
-        const data = await res.json();
-        if (data.success) {
-            const tbody = document.getElementById('draft-orders-tbody');
-            const badge = document.getElementById('draft-orders-badge');
-            if (badge) {
-                if (data.draft_orders.length > 0) {
-                    badge.innerText = data.draft_orders.length;
-                    badge.classList.remove('d-none');
-                } else {
-                    badge.classList.add('d-none');
-                }
-            }
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            if (data.draft_orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-secondary py-4 fw-medium">No approved draft orders found.</td></tr>';
-                return;
-            }
-            data.draft_orders.forEach(ord => {
-                const tr = document.createElement('tr');
-                const itemsSummary = (ord.items && ord.items.length > 0)
-                    ? ord.items.map(i => `${i.brand ? i.brand + ' ' : ''}${i.product_name} (${i.quantity} ${i.unit})`).join(', ')
-                    : `${ord.items_count} item${ord.items_count > 1 ? 's' : ''}`;
-
-                tr.innerHTML = `
-                    <td class="fw-bold text-info"><i class="fa-solid fa-file-signature me-1"></i>${ord.invoice_number}</td>
-                    <td class="text-secondary small">${ord.created_at ? ord.created_at.split('T')[0] : ''}</td>
-                    <td class="fw-semibold text-light">${ord.customer_name}</td>
-                    <td class="small text-light-50" style="max-width: 250px;">${itemsSummary}</td>
-                    <td>
-                        ${ord.maps_location_link ? `
-                            <a href="${ord.maps_location_link}" target="_blank" class="btn btn-xs btn-outline-info text-decoration-none">
-                                <i class="fa-solid fa-map-location-dot me-1"></i> View Site Map
-                            </a>
-                        ` : '<span class="text-muted small">No Location</span>'}
-                    </td>
-                    <td class="fw-bold text-success">₹${ord.grand_total.toFixed(2)}</td>
-                    <td><small class="text-muted"><i class="fa-solid fa-user me-1"></i>${ord.created_by}</small></td>
-                    <td class="text-center">
-                        <div class="d-flex justify-content-center gap-2">
-                            <button class="btn btn-sm btn-outline-info" onclick="viewInvoiceDetail(${ord.id})" title="View Products & Details">
-                                <i class="fa-solid fa-eye me-1"></i> View
-                            </button>
-                            <button class="btn btn-sm btn-success fw-bold" onclick="editInvoice(${ord.id}, true)" title="Generate Official Invoice">
-                                <i class="fa-solid fa-file-invoice me-1"></i> Generate Invoice
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteInvoice(${ord.id})" title="Delete Draft">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    } catch (e) {
-        console.error("Error loading draft orders:", e);
-    }
-}
-
-async function rejectOrder(invId) {
-    if (!confirm("Reject and cancel this order request?")) return;
-    try {
-        const res = await fetch(`/api/invoices/${invId}/reject`, { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-            alert(data.message);
-            await loadNewOrders();
-            await loadAllData();
-        } else {
-            alert(data.error);
-        }
-    } catch (e) {
-        alert("Failed to reject order request.");
-    }
-}
-
-async function submitAddProduct() {
-    const brand = document.getElementById('m-prod-brand').value.trim();
-    const productName = document.getElementById('m-prod-name').value.trim();
-    const variant = document.getElementById('m-prod-variant').value.trim();
-    const sku = document.getElementById('m-prod-sku').value.trim();
-    const mrp = parseFloat(document.getElementById('m-prod-mrp').value);
-    const gstRate = parseFloat(document.getElementById('m-prod-gst').value || 18);
-    const stockEl = document.getElementById('m-prod-stock');
-    const unitEl = document.getElementById('m-prod-unit');
-    const openingStock = stockEl ? parseFloat(stockEl.value || 0) : 0;
-    const unit = unitEl ? unitEl.value.trim() : "Bag";
-
-    if (!brand || !productName || isNaN(mrp) || mrp <= 0) {
-        alert("Please provide Brand, Product Name, and a valid MRP.");
-        return;
-    }
-
-    try {
-        const res = await fetch('/api/products', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                brand: brand,
-                product_name: productName,
-                variant: variant,
-                sku: sku,
-                mrp: mrp,
-                gst_rate: gstRate,
-                opening_stock: openingStock,
-                unit: unit
-            })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-            alert(data.message || "Product added successfully!");
-            const modalEl = document.getElementById('newProductModal');
-            if (modalEl) {
-                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                modal.hide();
-            }
-            const form = document.getElementById('add-product-form');
-            if (form) form.reset();
-            if (typeof loadProducts === 'function') await loadProducts();
-            await loadAllData();
-        } else {
-            alert(data.error || "Failed to add product.");
-        }
-    } catch (e) {
-        console.error("Add Product Error:", e);
-        alert("Server error while adding product.");
-    }
-}
-
-async function submitAddCustomer() {
-    const shopName = (document.getElementById('m-cust-shop')?.value || '').trim();
-    const personEl = document.getElementById('m-cust-person') || document.getElementById('m-cust-contact');
-    const contactPerson = (personEl?.value || '').trim();
-    const phone = (document.getElementById('m-cust-phone')?.value || '').trim();
-    const gstin = (document.getElementById('m-cust-gstin')?.value || '').trim();
-    const address = (document.getElementById('m-cust-address')?.value || '').trim();
-    const balance = parseFloat(document.getElementById('m-cust-balance')?.value || 0);
-
-    const mapsLocationLink = (document.getElementById('m-cust-maps-link')?.value || '').trim();
-
-    if (!shopName) {
-        alert("Shop / Customer Name is required.");
-        return;
-    }
-
-    try {
-        const isEdit = !!state.editingCustomerId;
-        const url = isEdit ? `/api/customers/${state.editingCustomerId}` : '/api/customers';
-        const method = isEdit ? 'PUT' : 'POST';
-
-        const res = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                shop_name: shopName,
-                contact_person: contactPerson,
-                phone: phone,
-                gstin: gstin,
-                address: address,
-                maps_location_link: mapsLocationLink,
-                opening_balance: balance
-            })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-            alert(data.message || (isEdit ? "Customer updated successfully!" : "Customer added successfully!"));
-            state.editingCustomerId = null;
-            const modalEl = document.getElementById('newCustomerModal');
-            if (modalEl) {
-                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                modal.hide();
-            }
-            const form = document.getElementById('add-customer-form');
-            if (form) form.reset();
-            if (typeof loadCustomers === 'function') await loadCustomers();
-            await loadAllData();
-        } else {
-            alert(data.error || "Failed to save customer.");
-        }
-    } catch (e) {
-        console.error("Save Customer Error:", e);
-        alert("Server error while adding customer.");
-    }
-}
-
-function togglePasswordVisibility(inputId, btnEl) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
-    const icon = btnEl ? btnEl.querySelector('i') : null;
-    if (input.type === 'password') {
-        input.type = 'text';
-        if (icon) {
-            icon.classList.remove('fa-eye');
-            icon.classList.add('fa-eye-slash');
-        }
+function updateAdminVisibility() {
+    if (state && state.currentUser && state.currentUser.role === 'admin') {
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('d-none'));
     } else {
-        input.type = 'password';
-        if (icon) {
-            icon.classList.remove('fa-eye-slash');
-            icon.classList.add('fa-eye');
-        }
-    }
-}
-
-function openChangePasswordModal() {
-    const form = document.getElementById('change-password-form');
-    if (form) form.reset();
-    const modalEl = document.getElementById('changePasswordModal');
-    if (modalEl) {
-        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-        modal.show();
-    }
-}
-
-async function submitChangePassword() {
-    const oldPw = document.getElementById('pw-current').value;
-    const newPw = document.getElementById('pw-new').value;
-    const confirmPw = document.getElementById('pw-confirm').value;
-
-    if (!oldPw || !newPw) {
-        alert("Please enter current and new password.");
-        return;
-    }
-    if (newPw !== confirmPw) {
-        alert("New password and confirm password do not match.");
-        return;
-    }
-    if (newPw.length < 4) {
-        alert("New password must be at least 4 characters long.");
-        return;
-    }
-
-    try {
-        const res = await fetch('/api/users/change-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                old_password: oldPw,
-                new_password: newPw
-            })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-            alert(data.message || "Password updated successfully!");
-            const modalEl = document.getElementById('changePasswordModal');
-            if (modalEl) {
-                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                modal.hide();
-            }
-            const form = document.getElementById('change-password-form');
-            if (form) form.reset();
-        } else {
-            alert(data.error || "Failed to update password.");
-        }
-    } catch (e) {
-        console.error("Change password error:", e);
-        alert("Server error while updating password.");
-    }
-}
-
-function openAdminResetPasswordModal(userId, username) {
-    document.getElementById('admin-reset-user-id').value = userId;
-    document.getElementById('admin-reset-username').innerText = username;
-    document.getElementById('admin-reset-new-pw').value = '';
-
-    const modalEl = document.getElementById('adminResetPasswordModal');
-    if (modalEl) {
-        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-        modal.show();
-    }
-}
-
-async function submitAdminResetPassword() {
-    const userId = document.getElementById('admin-reset-user-id').value;
-    const newPw = document.getElementById('admin-reset-new-pw').value;
-
-    if (!newPw || newPw.length < 4) {
-        alert("New password must be at least 4 characters long.");
-        return;
-    }
-
-    try {
-        const res = await fetch(`/api/users/${userId}/reset-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                new_password: newPw
-            })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-            alert(data.message || "User password reset successfully!");
-            const modalEl = document.getElementById('adminResetPasswordModal');
-            if (modalEl) {
-                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                modal.hide();
-            }
-        } else {
-            alert(data.error || "Failed to reset password.");
-        }
-    } catch (e) {
-        console.error("Admin reset password error:", e);
-        alert("Server error while resetting user password.");
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.add('d-none'));
     }
 }
