@@ -39,3 +39,6 @@ Thumbs.db
 
 # Archives
 *.zip
+
+# Client update files
+client_update_files/
