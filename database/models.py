@@ -370,6 +370,7 @@ class Invoice(Base):
     notes = Column(Text, default="")
     created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=now_utc)
+    delivered_at = Column(DateTime, nullable=True)
     cancelled_at = Column(DateTime, nullable=True)
     cancelled_reason = Column(Text, nullable=True)
 

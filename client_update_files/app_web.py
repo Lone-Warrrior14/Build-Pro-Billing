@@ -674,6 +674,12 @@ def update_invoice_route(invoice_id: int):
 @app.route("/api/delivery-requests", methods=["GET"])
 def get_order_requests():
     with session_scope() as session:
+        # Automatically purge delivered orders older than 30 days (1 month)
+        try:
+            billing_service.auto_delete_expired_delivered_orders(session, max_age_days=30)
+        except Exception as e:
+            print(f"Auto-purge error: {e}")
+
         invoices = session.query(Invoice).filter(Invoice.status.in_([InvoiceStatus.ORDER_REQUESTED, InvoiceStatus.STOCK_READY, InvoiceStatus.DELIVERED])).order_by(Invoice.invoice_date.desc()).all()
         orders_res = []
         product_summary_map = {}
@@ -1061,8 +1067,8 @@ def download_invoice_pdf(invoice_id: int):
         inv = session.get(Invoice, invoice_id)
         if not inv:
             return jsonify({"error": "Invoice not found"}), 404
-        if inv.status == InvoiceStatus.ORDER_REQUESTED:
-            return jsonify({"error": "Order requests cannot generate invoice bills until approved by billing/admin."}), 400
+        if inv.status in (InvoiceStatus.ORDER_REQUESTED, InvoiceStatus.STOCK_READY, InvoiceStatus.DELIVERED):
+            return jsonify({"error": "Delivery orders and requests cannot generate invoice bills."}), 400
         
         from database.connection import get_app_dir
         out_dir = os.path.join(get_app_dir(), "generated_invoices")
@@ -1127,6 +1133,11 @@ def update_delivery_status(invoice_id: int):
                 return jsonify({"success": False, "error": "Delivery request not found"}), 404
             
             inv.status = valid_statuses[new_status_str]
+            import datetime as dt
+            if new_status_str == "delivered":
+                inv.delivered_at = dt.datetime.utcnow()
+            else:
+                inv.delivered_at = None
             return jsonify({"success": True, "message": f"Delivery request {inv.invoice_number} updated to {new_status_str}!"})
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 400

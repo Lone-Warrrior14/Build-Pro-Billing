@@ -690,3 +690,30 @@ def permanent_delete_invoice(db: Session, invoice_id: int) -> bool:
 
     db.delete(invoice)
     return True
+
+
+def auto_delete_expired_delivered_orders(db: Session, max_age_days: int = 30) -> int:
+    """Purges delivered orders that have been in DELIVERED status for more than 30 days (1 month)."""
+    import datetime as dt
+    cutoff = dt.datetime.utcnow() - dt.timedelta(days=max_age_days)
+    
+    # Check delivered orders where delivered_at is older than cutoff (or created_at if delivered_at not set)
+    expired = (
+        db.query(Invoice)
+        .filter(
+            Invoice.status == InvoiceStatus.DELIVERED,
+            (
+                (Invoice.delivered_at.isnot(None) & (Invoice.delivered_at <= cutoff))
+                | (Invoice.delivered_at.is_(None) & (Invoice.created_at <= cutoff))
+            )
+        )
+        .all()
+    )
+    
+    deleted_count = 0
+    for inv in expired:
+        permanent_delete_invoice(db, inv.id)
+        deleted_count += 1
+        
+    return deleted_count
+

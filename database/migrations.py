@@ -112,3 +112,10 @@ def ensure_defaults():
         except Exception:
             pass
 
+        try:
+            from sqlalchemy import text
+            db.execute(text("ALTER TABLE invoices ADD COLUMN delivered_at DATETIME"))
+        except Exception:
+            pass
+
+

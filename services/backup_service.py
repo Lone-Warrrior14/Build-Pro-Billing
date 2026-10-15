@@ -87,6 +87,13 @@ def start_daily_12pm_backup_service(check_interval_seconds: int = 60):
                 check_and_trigger_daily_12pm_backup()
             except Exception:
                 pass
+            try:
+                from database.connection import session_scope
+                from services.billing_service import auto_delete_expired_delivered_orders
+                with session_scope() as session:
+                    auto_delete_expired_delivered_orders(session, max_age_days=30)
+            except Exception:
+                pass
             time.sleep(check_interval_seconds)
 
     t = threading.Thread(target=_loop, daemon=True)

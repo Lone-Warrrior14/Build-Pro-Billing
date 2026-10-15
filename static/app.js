@@ -1120,6 +1120,7 @@ async function deleteInvoice(invId, invNumber) {
         if (data.success) {
             alert(data.message);
             await loadAllData();
+            if (typeof loadRecycleBin === 'function') await loadRecycleBin();
         } else {
             alert(data.error);
         }
@@ -1127,6 +1128,7 @@ async function deleteInvoice(invId, invNumber) {
         alert("Failed to move invoice to recycle bin.");
     }
 }
+
 
 async function loadRecycleBin() {
     try {
@@ -2211,37 +2213,60 @@ async function submitAddClient() {
 }
 
 async function submitAddProduct() {
-    const brand = document.getElementById('m-prod-brand').value;
-    const name = document.getElementById('m-prod-name').value;
-    const mrp = parseFloat(document.getElementById('m-prod-mrp').value) || 0;
+    const brand = (document.getElementById('m-prod-brand')?.value || '').trim();
+    const name = (document.getElementById('m-prod-name')?.value || '').trim();
+    const variant = (document.getElementById('m-prod-variant')?.value || '').trim();
+    const sku = (document.getElementById('m-prod-sku')?.value || '').trim();
+    const mrp = parseFloat(document.getElementById('m-prod-mrp')?.value || 0);
+    const gstRate = parseFloat(document.getElementById('m-prod-gst')?.value || 18);
+    const stockEl = document.getElementById('m-prod-stock');
+    const openingStock = stockEl ? parseFloat(stockEl.value || 0) : 0;
+    const unitEl = document.getElementById('m-prod-unit');
+    const unit = unitEl ? unitEl.value.trim() : "Bag";
 
-    if (!brand || !name || mrp <= 0) return alert("Brand, Name and MRP are required!");
+    if (!brand || !name || isNaN(mrp) || mrp <= 0) {
+        return alert("Brand, Product Name and a valid MRP (> 0) are required!");
+    }
 
     const payload = {
         brand: brand,
         product_name: name,
-        variant: document.getElementById('m-prod-variant').value,
-        sku: document.getElementById('m-prod-sku').value,
+        variant: variant,
+        sku: sku || null,
         mrp: mrp,
-        gst_rate: parseFloat(document.getElementById('m-prod-gst').value) || 18,
-        opening_stock: parseFloat(document.getElementById('m-prod-stock').value) || 0
+        gst_rate: isNaN(gstRate) ? 18 : gstRate,
+        unit: unit,
+        opening_stock: isNaN(openingStock) ? 0 : openingStock
     };
 
-    const res = await fetch('/api/products', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-    });
+    try {
+        const res = await fetch('/api/products', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
 
-    const data = await res.json();
-    if (data.success) {
-        bootstrap.Modal.getInstance(document.getElementById('newProductModal')).hide();
-        document.getElementById('add-product-form').reset();
-        await loadProducts();
-    } else {
-        alert(data.error);
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message || "Product added successfully!");
+            const modalEl = document.getElementById('newProductModal');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+            }
+            const form = document.getElementById('add-product-form');
+            if (form) form.reset();
+            if (typeof loadProducts === 'function') await loadProducts();
+            if (typeof loadAllData === 'function') await loadAllData();
+        } else {
+            alert(data.error || "Failed to add product.");
+        }
+    } catch (e) {
+        console.error("Add Product Error:", e);
+        alert("Server error while adding product.");
     }
 }
+
 
 function openRecordPaymentModal(invId, invNumber, balance) {
     document.getElementById('pay-invoice-id').value = invId;
@@ -2294,15 +2319,25 @@ async function viewInvoiceDetail(invId) {
 
         const inv = data.invoice;
 
+        const isDeliveryOrder = ['order_requested', 'stock_ready', 'delivered'].includes(inv.status);
+        const isDraftOrPending = inv.status === 'pending_approval' || inv.status === 'draft';
+        const isRequest = isDeliveryOrder || isDraftOrPending || (inv.invoice_number && inv.invoice_number.startsWith('REQ-'));
+
         const pdfBtnsContainer = document.getElementById('invoice-modal-pdf-btns');
-        if (inv.status === 'pending_approval' || inv.status === 'draft') {
+        if (isDeliveryOrder || isDraftOrPending) {
             if (pdfBtnsContainer) pdfBtnsContainer.classList.add('d-none');
         } else {
             if (pdfBtnsContainer) pdfBtnsContainer.classList.remove('d-none');
         }
 
-        const isRequest = inv.status === 'pending_approval' || (inv.invoice_number && inv.invoice_number.startsWith('REQ-'));
-        const displayInvNumber = isRequest ? `Order Request #${inv.id}` : inv.invoice_number;
+        const modalTitle = document.querySelector('#viewInvoiceModal .modal-title');
+        if (modalTitle) {
+            modalTitle.innerHTML = isDeliveryOrder
+                ? '<i class="fa-solid fa-truck-ramp-box me-2 text-warning"></i>Delivery Order Details'
+                : '<i class="fa-solid fa-file-invoice me-2 text-primary"></i>Invoice Details';
+        }
+
+        const displayInvNumber = isRequest ? `Order Request #${inv.invoice_number || inv.id}` : inv.invoice_number;
 
         modalBody.innerHTML = `
             <div class="p-3 rounded border mb-4" style="background-color: rgba(15, 23, 42, 0.9); border-color: #334155 !important;">
@@ -2684,14 +2719,17 @@ async function loadDeliveryRequests() {
                       <td>${statusBadge}</td>
                       <td class="fw-bold text-success">₹${ord.grand_total.toFixed(2)}</td>
                       <td class="admin-only text-muted small">${ord.created_by}</td>
-                      ${!isDelivered ? `
                       <td class="text-center">
-                          <div class="btn-group">
-                              ${isRequested ? `<button class="btn btn-sm btn-outline-info" onclick="updateDeliveryStatus(${ord.id}, 'stock_ready')" title="Mark Stock Ready"><i class="fa-solid fa-box"></i> Stock Ready</button>` : ''}
-                              ${isReady ? `<button class="btn btn-sm btn-outline-success" onclick="updateDeliveryStatus(${ord.id}, 'delivered')" title="Mark Delivered"><i class="fa-solid fa-truck"></i> Deliver</button>` : ''}
-                              <button class="btn btn-sm btn-outline-danger" onclick="rejectOrder(${ord.id})" title="Cancel Request"><i class="fa-solid fa-xmark"></i></button>
+                          <div class="btn-group btn-group-sm">
+                              <button class="btn btn-outline-info" onclick="viewInvoiceDetail(${ord.id})" title="View Full Order Details">
+                                  <i class="fa-solid fa-eye me-1"></i> View
+                              </button>
+                              ${isRequested ? `<button class="btn btn-outline-info" onclick="updateDeliveryStatus(${ord.id}, 'stock_ready')" title="Mark Stock Ready"><i class="fa-solid fa-box me-1"></i> Stock Ready</button>` : ''}
+                              ${isReady ? `<button class="btn btn-outline-success" onclick="updateDeliveryStatus(${ord.id}, 'delivered')" title="Mark Delivered"><i class="fa-solid fa-truck me-1"></i> Deliver</button>` : ''}
+                              ${isDelivered ? `<button class="btn btn-outline-warning" onclick="updateDeliveryStatus(${ord.id}, 'stock_ready')" title="Undo Delivery (move back to Stock Ready)"><i class="fa-solid fa-rotate-left me-1"></i> Undo</button>` : ''}
+                              ${!isDelivered ? `<button class="btn btn-outline-danger" onclick="rejectOrder(${ord.id})" title="Cancel Request"><i class="fa-solid fa-xmark"></i></button>` : ''}
                           </div>
-                      </td>` : ''}
+                      </td>
                   `;
                   targetTbody.appendChild(tr);
               };
@@ -2705,7 +2743,7 @@ async function loadDeliveryRequests() {
               
               if (deliveredTbody) {
                   if (deliveredOrders.length === 0) {
-                      deliveredTbody.innerHTML = '<tr><td colspan="7" class="text-center text-secondary py-4 fw-medium">No delivered orders found.</td></tr>';
+                      deliveredTbody.innerHTML = '<tr><td colspan="8" class="text-center text-secondary py-4 fw-medium">No delivered orders found.</td></tr>';
                   } else {
                       deliveredTbody.innerHTML = '';
                       deliveredOrders.forEach(ord => appendRow(deliveredTbody, ord));
@@ -2746,3 +2784,144 @@ function updateAdminVisibility() {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.add('d-none'));
     }
 }
+
+async function rejectOrder(invId) {
+    if (!confirm("Reject and cancel this order request?")) return;
+    try {
+        const res = await fetch(`/api/invoices/${invId}/reject`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message);
+            if (typeof loadDeliveryRequests === 'function') await loadDeliveryRequests();
+            if (typeof loadAllData === 'function') await loadAllData();
+        } else {
+            alert(data.error);
+        }
+    } catch (e) {
+        alert("Failed to reject order request.");
+    }
+}
+
+function togglePasswordVisibility(inputId, btnEl) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const icon = btnEl ? btnEl.querySelector('i') : null;
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) {
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        }
+    } else {
+        input.type = 'password';
+        if (icon) {
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+}
+
+function openChangePasswordModal() {
+    const form = document.getElementById('change-password-form');
+    if (form) form.reset();
+    const modalEl = document.getElementById('changePasswordModal');
+    if (modalEl) {
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
+
+async function submitChangePassword() {
+    const oldPw = document.getElementById('pw-current').value;
+    const newPw = document.getElementById('pw-new').value;
+    const confirmPw = document.getElementById('pw-confirm').value;
+
+    if (!oldPw || !newPw) {
+        alert("Please enter current and new password.");
+        return;
+    }
+    if (newPw !== confirmPw) {
+        alert("New password and confirm password do not match.");
+        return;
+    }
+    if (newPw.length < 4) {
+        alert("New password must be at least 4 characters long.");
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/users/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                old_password: oldPw,
+                new_password: newPw
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message || "Password updated successfully!");
+            const modalEl = document.getElementById('changePasswordModal');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+            }
+            const form = document.getElementById('change-password-form');
+            if (form) form.reset();
+        } else {
+            alert(data.error || "Failed to update password.");
+        }
+    } catch (e) {
+        console.error("Change password error:", e);
+        alert("Server error while updating password.");
+    }
+}
+
+function openAdminResetPasswordModal(userId, username) {
+    document.getElementById('admin-reset-user-id').value = userId;
+    document.getElementById('admin-reset-username').innerText = username;
+    document.getElementById('admin-reset-new-pw').value = '';
+
+    const modalEl = document.getElementById('adminResetPasswordModal');
+    if (modalEl) {
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
+
+async function submitAdminResetPassword() {
+    const userId = document.getElementById('admin-reset-user-id').value;
+    const newPw = document.getElementById('admin-reset-new-pw').value;
+
+    if (!newPw || newPw.length < 4) {
+        alert("New password must be at least 4 characters long.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/users/${userId}/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                new_password: newPw
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message || "User password reset successfully!");
+            const modalEl = document.getElementById('adminResetPasswordModal');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+            }
+        } else {
+            alert(data.error || "Failed to reset password.");
+        }
+    } catch (e) {
+        console.error("Admin reset password error:", e);
+        alert("Server error while resetting user password.");
+    }
+}
+
