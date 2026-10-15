@@ -1,203 +1,135 @@
-# BuildPro Billing Software
+# BuildPro Billing & Inventory System
 
-A local, offline, Windows desktop billing and management application for
-**BuildPro**, a cement dealership in Karnataka, India.
+A modern, offline-first billing, inventory, and delivery tracking application built for **BuildPro Ready Mix** (Permude, Mangalore, Karnataka, India).
 
-Built with Python 3, PySide6, SQLite (via SQLAlchemy), and ReportLab.
+The software provides a comprehensive solution for managing day-to-day operations: creating GST tax invoices, managing customer orders and ledgers, tracking bag-level product stock and pricing memory, handling delivery requests, printing official invoices, and automating daily database backups.
 
 ---
 
-## 1. Key features
+## 🚀 Key Features
 
-- Fully offline. All data lives in a single SQLite file (`data/buildpro.db`).
-- **Selling-price memory**: the software remembers the last price used for
-  every Shop + Product combination and suggests it next time — but the
-  price is always editable and never locked.
-- Cement sold **by the bag**, with MRP stored on the product and the
-  actual selling price entered fresh on every invoice.
-- Automatic invoice numbering (`INV-001`, `INV-002`, ...) that survives
-  crashes without ever reusing a number.
-- 18% default GST (9% CGST + 9% SGST for Karnataka intra-state sales),
-  fully configurable, with the rate **frozen onto every historical
-  invoice** so later GST changes never alter old invoices.
-- Full customer ledger, stock tracking with a complete movement history,
-  partial/credit payments, sales returns, and an audit log.
-- Professional tax-invoice PDF generation with your logo, "Authorized
-  Dealer" section, GST breakdown, signature, and company stamp — all
-  configurable from Settings, and all frozen onto each invoice so
-  reprints never change.
-- Manual and automatic daily backups (SQLite online-backup API), with
-  safe restore (the current database is archived before being replaced).
-- Two user roles: **Administrator** (full access) and **Billing User**
-  (create invoices, search, view, record payments).
+### 1. Billing & Order Fulfillment Lifecycle
+- **Order Workflow**:
+  1. **Order Requested**: Initial booking of orders / pending dispatch.
+  2. **Stock Ready**: Items packed, stock verified and prepared for shipment.
+  3. **Delivered**: Dispatched to the customer. Delivered orders feature an **Undo** capability (to return to `stock_ready` if needed) and are **auto-purged after 30 days**.
+- **Selling Price Memory**: Remembers the last customized price for each Customer + Product combination and auto-suggests it on subsequent bills while remaining fully editable.
+- **Strict Invoice Numbering & Recycle Bin**: Crash-safe sequence counters (`INV-001`, `INV-002`, ...). Deleted invoices are archived into a Recycle Bin to keep numbering sequences intact and audits transparent.
+- **Delivery Restrictions**: Invoices cannot be printed/finalized while in draft or order-request states—preventing premature invoicing until stock is processed and verified.
 
-## 2. Project structure
+### 2. GST & Financial Precision
+- **Integer Paise Architecture**: All monetary calculations are performed in integer paise (1 INR = 100 paise) to completely prevent IEEE 754 floating-point rounding drift.
+- **Frozen Invoices**: Invoices freeze product details, rates, customer GSTIN, tax percentages (18% GST with CGST/SGST breakdown), and company signatures at the exact moment of issuance.
+- **Transport & Service Charges**: Includes dedicated transport charge calculations (paise) and optional service fee accounting.
+
+### 3. Customer Ledger & Inventory Management
+- **Customer Types**: Distinguishes between Shop and Direct/Site customer types with Google Maps location links for easy navigation and deliveries.
+- **Stock Movements**: Full audit log for stock-in, stock-out, returns, and inventory adjustments.
+- **Credit & Ledger Tracking**: Tracks partial payments, credit histories, and customer balances.
+
+### 4. Security & Administration
+- **Role-Based Access**: Multi-tier permissions (Administrator, Sales Executive, Billing User, Driver/Delivery).
+- **User & Password Management**: Includes self-service password changes and administrative password resets with bcrypt salting.
+- **Automatic Backups**: Scheduled daily post-12 PM automated SQLite backups to the `backups/` directory, with manual snapshot and safe-restore capabilities.
+
+---
+
+## 🛠️ Technology Stack
+
+- **Backend**: Python 3, Flask, SQLAlchemy ORM, SQLite
+- **Frontend**: Vanilla JavaScript (ES6+), HTML5, Responsive Modern CSS, FontAwesome
+- **Reporting & Documents**: ReportLab (High-resolution Tax Invoice PDF generation)
+- **Networking & Access**: Built-in support for local network access, Cloudflare tunnels (`pycloudflared`), and Ngrok tunnels.
+
+---
+
+## 📂 Project Structure
 
 ```
-buildpro/
-├── main.py                  # application entry point
-├── requirements.txt
-├── buildpro.spec            # PyInstaller build spec
+Build-Pro-Billing/
+├── main.py                  # Main application entry point & service coordinator
+├── app_web.py               # Flask web application & REST API routes
+├── requirements.txt         # Python runtime dependencies
+├── buildpro.spec            # PyInstaller build configuration
 ├── database/
-│   ├── connection.py         # engine/session setup, session_scope()
-│   ├── models.py              # SQLAlchemy schema (all tables)
-│   └── migrations.py          # first-run defaults (settings, admin user)
-├── services/                  # all business logic - the UI never talks
-│   │                           # to the database directly
-│   ├── billing_service.py     # create_invoice() - the atomic core workflow
-│   ├── pricing_service.py     # selling-price memory
-│   ├── customer_service.py    # shops + ledger
-│   ├── product_service.py
-│   ├── stock_service.py       # stock in/out/adjust + history
-│   ├── invoice_service.py     # invoice numbering + search
-│   ├── returns_service.py
-│   ├── backup_service.py
-│   ├── report_service.py
-│   └── audit_service.py
+│   ├── connection.py        # Database engine & transactional session_scope()
+│   ├── models.py            # SQLAlchemy database schemas & Enums
+│   └── migrations.py        # Auto-migration & first-run defaults
+├── services/
+│   ├── billing_service.py   # Atomic invoice creation, order states & 30-day purge
+│   ├── backup_service.py    # Auto-backup scheduling & restore utilities
+│   ├── pricing_service.py   # Customer-product price memory
+│   ├── stock_service.py     # Inventory adjustments & stock ledger
+│   ├── customer_service.py  # Customer accounts & ledgers
+│   └── invoice_service.py   # Numbering sequences & search
 ├── invoices/
-│   └── invoice_generator.py   # ReportLab PDF generation
-├── ui/                        # PySide6 screens
-│   ├── main_window.py, login.py, dashboard.py, billing.py,
-│   │   invoices.py, customers.py, products.py, stock.py,
-│   │   payments.py, reports.py, settings.py
-├── utils/
-│   ├── money.py                # paise<->rupee helpers, INR formatting
-│   └── security.py             # password hashing
-├── assets/                     # uploaded logo/signature/stamp images
-├── data/                       # buildpro.db lives here (created on first run)
-└── backups/                    # backup_YYYY-MM-DD_HHMMSS.db files
+│   └── invoice_generator.py # ReportLab PDF invoice generation
+├── static/
+│   ├── app.js               # Frontend business logic & modal management
+│   └── style.css            # Responsive layout styling
+├── templates/
+│   └── index.html           # Single-Page Web UI layout
+├── client_update_files/     # Deployment-ready update package for client machines
+├── migrate_requests.py      # Standalone schema and enum migration runner
+├── data/                    # SQLite database storage (buildpro.db)
+└── backups/                 # Timestamped daily & manual database backups
 ```
 
-## 3. Design notes (why it's built this way)
+---
 
-- **Money is stored as integer paise**, never as float rupees, to avoid
-  floating-point rounding drift across years of invoices.
-- **Every historical invoice is a frozen snapshot.** `Invoice` and
-  `InvoiceItem` rows store the MRP, selling price, GST/CGST/SGST rates,
-  customer name/address/GSTIN, and even the company logo/signature/stamp
-  paths *as they were at the moment of billing*. Changing a product,
-  customer, or Settings value later never rewrites old invoices.
-- **`create_invoice()` is fully transactional.** Invoice + items + stock
-  reduction + ledger update + price-memory update all happen inside one
-  `session_scope()` — if anything fails (e.g. insufficient stock), the
-  whole operation rolls back and nothing is half-saved.
-- **Nothing is hard-deleted.** Products and shops are soft-deleted
-  (`is_active = False`); invoices are only ever cancelled/voided, never
-  removed, so historical reports stay accurate.
-- **Invoice numbers can't be reused**, even after a crash, because the
-  sequence counter is incremented in the same transaction as the invoice
-  row — SQLite guarantees both happen or neither does.
+## 💻 Installation & Setup
 
-## 4. Setup (development)
+### Prerequisites
+- Python 3.10+ (Python 3.11 / 3.12 recommended)
+- Git
+
+### 1. Clone & Set Up Virtual Environment
 
 ```bash
+git clone https://github.com/Lone-Warrrior14/Build-Pro-Billing.git
+cd Build-Pro-Billing
+
+# Create virtual environment
 python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+
+# Activate virtual environment
+# Linux/macOS:
+source venv/bin/activate
+# Windows:
+venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-## 5. Running the app
+### 2. Run the Application
 
 ```bash
 python main.py
 ```
 
-On first run this will:
-- Create `data/buildpro.db` and all tables.
-- Create a default company-settings row (18% GST, `INV-` prefix).
-- Create a default administrator account:
-  - **Username:** `admin`
-  - **Password:** `admin123`
-  - **Change this password immediately** (via Settings — see note below;
-    a "Change Password" UI hook can be added to the Users/Settings screen
-    for production rollout).
-- Take an automatic backup if none exists for today.
+On initial launch:
+- Creates `data/buildpro.db` with all required tables and default configurations.
+- Default Admin Credentials:
+  - **Username**: `admin`
+  - **Password**: `admin123`
+- Automatically opens your default browser at `http://127.0.0.1:5000`.
 
-## 6. First-time configuration checklist
+---
 
-1. Log in as `admin`.
-2. Go to **Settings → Company** and enter BuildPro's name, address,
-   phone, GSTIN, and upload the logo.
-3. Go to **Settings → GST** and confirm the default rate (18%, 9%+9%).
-4. Go to **Settings → Authorized Dealer** and enter the dealer text
-   (e.g. "Authorized Dealer of UltraTech Cement, ACC Cement").
-5. Go to **Settings → Signature** and **Settings → Company Stamp** and
-   upload images, enter the signatory's name/designation.
-6. Go to **Products** and add your cement products (brand, variant, MRP,
-   GST rate, opening stock).
-7. Go to **Shops** and add your regular customers (or add them on the fly
-   from the New Bill screen).
-8. Start billing from **New Bill**.
+## 📦 Client PC Updates
 
-## 7. Building the Windows .exe
+To deploy updates to an existing client installation:
+1. Copy the contents of the [`client_update_files/`](client_update_files/) folder.
+2. Paste and overwrite the files inside the client's application directory.
+3. Start the application or run:
+   ```bash
+   python migrate_requests.py
+   ```
+   All database schema changes (such as `delivered_at` timestamping) and enum migrations will apply automatically.
 
-On a Windows machine (PyInstaller must build on the target OS):
+---
 
-```powershell
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-pyinstaller buildpro.spec
-```
+## 📄 License & Ownership
 
-The finished app will be in `dist/BuildPro/BuildPro.exe`. Copy the whole
-`dist/BuildPro` folder to the target computer — `data/`, `backups/`, and
-`generated_invoices/` folders will be created next to the .exe on first
-run.
-
-```
-BuildPro/
-├── BuildPro.exe
-├── data/
-│   └── buildpro.db
-├── backups/
-│   └── backup_2026-08-27_090000.db
-└── generated_invoices/
-    └── INV-001.pdf
-```
-
-## 8. Backups
-
-- An automatic backup is taken once per day on startup if one hasn't
-  already been taken that day.
-- Manual backups: **Settings → Backup → Backup Now**.
-- Restoring: **Settings → Backup → Restore from Backup...** — the
-  current database is archived first, so a restore can itself be undone.
-- Back up the whole `backups/` folder off-machine periodically (USB
-  drive, email, cloud drive) — BuildPro does not currently upload
-  backups anywhere automatically.
-
-## 9. Known limitations / suggested next steps
-
-This is a complete, working v1 focused on reliability and correctness
-of the core billing/pricing/stock/ledger workflow, per the original
-spec's emphasis on a low daily volume (~10 invoices/day). A few things
-worth adding before/after wider rollout:
-
-- A "Change Password" and "Manage Users" screen (the `User`/role model
-  and password hashing are already fully implemented in
-  `database/models.py` / `utils/security.py` — only the CRUD screen is
-  not yet wired into the UI).
-- Printer selection/margins UI (the `CompanySettings` fields exist;
-  wiring them to `QPrinter` for direct printing rather than
-  open-the-PDF is a small addition).
-- Multiple authorized-dealer brand logos on the invoice (the
-  `AuthorizedDealerBrand` table exists; only a management UI is pending).
-- Barcode scanning, multi-computer/network access, and cloud backup are
-  intentionally out of scope for v1, per the spec, but the service-layer
-  architecture (UI never touches the DB directly) is structured so they
-  can be added later without a rewrite.
-
-## 10. Running tests / sanity-checking core logic
-
-There is no formal test suite bundled, but the core billing engine was
-verified interactively during development to confirm:
-- Selling-price memory suggests, then updates correctly per Shop+Product.
-- MRP and historical invoices never change when prices/settings change.
-- Insufficient-stock sales are blocked and roll back cleanly.
-- Returns and invoice cancellations correctly reverse stock/ledger
-  without deleting the original invoice.
-- Invoice PDFs generate correctly from the frozen invoice snapshot.
-
-You can re-run similar checks yourself via a Python shell using the
-`services/*` modules directly against a scratch SQLite file.
+Proprietary software developed for **BuildPro Ready Mix**, Mangalore. All rights reserved.
